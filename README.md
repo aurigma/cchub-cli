@@ -1,20 +1,57 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# Hello World CLI Application
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+This is a simple command-line interface (CLI) application built with Node.js and TypeScript. The application demonstrates how to create a basic CLI that can accept commands and arguments.
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+## Features
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+- Command parsing
+- Argument handling
+- Simple logging functionality
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+## Installation
+
+To install the project, clone the repository and run the following command:
+
+```bash
+npm install
+```
+
+## Usage
+
+To run the CLI application, use the following command:
+
+```bash
+npm run start -- <command> <args>
+```
+
+### Example
+
+To greet a user, you can use the `hello` command followed by a name:
+
+```bash
+npm run start -- hello John
+```
+
+This will output:
+
+```
+Hello, John!
+```
+
+## Development
+
+To build the project, run:
+
+```bash
+npm run build
+```
+
+To run tests, use:
+
+```bash
+npm test
+```
+
+## License
+
+This project is licensed under the MIT License.

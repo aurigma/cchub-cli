@@ -1,14 +1,14 @@
 import { inject, injectable } from 'tsyringe';
 import { Logger } from "winston";
-import { CCHubBackOfficeApiService } from "../services/cchub-backofficeapi-service";
-import Table from 'cli-table3';
 import { StorefrontView } from 'src/views/storefronts';
+import { Command } from 'commander';
+import { BackOfficeApiClientBuilder } from 'src/services/backoffice-api-client-builder';
 
 @injectable()
 export class StorefrontCommands {
 
     constructor(
-        @inject(CCHubBackOfficeApiService) private readonly backOfficeApi: CCHubBackOfficeApiService,
+        @inject(BackOfficeApiClientBuilder) private readonly backOfficeApi: BackOfficeApiClientBuilder,
         @inject(StorefrontView) private readonly storefrontView: StorefrontView,
         @inject("Logger") private readonly logger: Logger
     ) {
@@ -17,8 +17,31 @@ export class StorefrontCommands {
         this.logger = logger;
     }
 
+    public addCli(parentCommand: Command) {
+        const command = parentCommand.command("storefronts")
+            .description('Allows to work with storefronts')
+
+        command
+            .command("list")
+            .argument("[searchString]", "A search string used to filter out storefronts (by name - partial)")
+            .action((searchString: string) => {
+                this.list(searchString);
+            });
+
+        return command;
+    }
+
     public async list(searchString?: string) {
-        const storefronts = await this.backOfficeApi.getStorefronts(searchString);
+        this.logger.debug(`Entered StorefrontCommands.list. searchString: ${searchString}`);
+
+        const storefrontManagementClient = await this.backOfficeApi.buildStorefrontManagementApiClient();
+        const storefronts = await storefrontManagementClient.getAll(
+            null, // types
+            null, // skip
+            null, // take
+            "LastModified DESC",
+            searchString // search
+        );
         const tenantId = this.backOfficeApi.getCurrentTenantId();
         this.logger.info(`Found ${storefronts.total} storefronts for tenant ${tenantId}. `);
 

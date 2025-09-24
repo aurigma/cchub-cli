@@ -17,7 +17,7 @@ export async function findProjectsVDP(options: FindProjectsVDPOptions): Promise<
     const designatomsapi = container.resolve(CCHubDesignAtomsApiService);
 
     const projects = (await Promise.all(options.orderIds
-        .map(async x => await storefrontapi.getProjectsByOrderId(options.storefrontId, x))))
+        .map(async x => await storefrontapi.getProjectsBySearchString(options.storefrontId, x))))
         .flat();
 
     logger.info(`Found ${projects.length} projects.`);

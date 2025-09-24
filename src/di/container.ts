@@ -2,13 +2,18 @@ import "reflect-metadata";
 import { container, Lifecycle } from "tsyringe";
 import { CCHubConfiguration } from "../services/cchub-configuration";
 import { CCHubAuth } from "../services/cchub-auth";
-import { CCHubStorefrontApiService } from "../services/cchub-storefrontapi-service";
-import { CCHubDesignAtomsApiService } from "../services/cchub-designatomsapi-service";
-import { CCHubAssetProcessorService } from "../services/cchub-assetprocessor-service";
 import winston from "winston";
 import { StorefrontCommands } from "../commands/storefronts";
 import { StorefrontView } from "src/views/storefronts";
 import { PipelineView } from "src/views/pipeline";
+import { ProjectCommands } from "src/commands/projects";
+import { PipelineCommands } from "src/commands/pipelines";
+import { AssetStorageApiClientBuilder } from "src/services/asset-storage-api-client-builder";
+import { AssetProcessorApiClientBuilder } from "src/services/asset-processor-api-client-builder";
+import { DesignAtomsApiClientBuilder } from "src/services/design-atoms-api-client-builder";
+import { StorefrontApiClientBuilder } from "src/services/storefront-api-client-builder";
+import { BackOfficeApiClientBuilder } from "src/services/backoffice-api-client-builder";
+import { ProjectView } from "src/views/project";
 
 
 const registerDependencies = () => {
@@ -32,6 +37,10 @@ const registerDependencies = () => {
             })
         });
 
+    registerApiClientBuilders();
+    registerViews();
+    registerCommands();
+
     // Регистрация сервисов
     container.register(
         CCHubConfiguration,
@@ -43,7 +52,9 @@ const registerDependencies = () => {
         { useClass: CCHubAuth },
         { lifecycle: Lifecycle.Singleton }
     );
+};
 
+function registerViews() {
     container.register(StorefrontView,
         { useClass: StorefrontView }
     );
@@ -52,22 +63,47 @@ const registerDependencies = () => {
         { useClass: PipelineView }
     );
 
-    container.register(CCHubStorefrontApiService, {
-        useClass: CCHubStorefrontApiService
-    });
+    container.register(ProjectView,
+        { useClass: ProjectView }
+    );
+}
 
-    container.register(CCHubDesignAtomsApiService, {
-        useClass: CCHubDesignAtomsApiService
-    });
-
-    container.register(CCHubAssetProcessorService, {
-        useClass: CCHubAssetProcessorService
-    });
-
-
+function registerCommands() {
     container.register(StorefrontCommands, {
         useClass: StorefrontCommands
     });
-};
+
+    container.register(PipelineCommands, {
+        useClass: PipelineCommands
+    });
+
+    container.register(ProjectCommands, {
+        useClass: ProjectCommands
+    });
+}
+
+function registerApiClientBuilders() {
+    container.register(AssetStorageApiClientBuilder, {
+        useClass: AssetStorageApiClientBuilder
+    });
+
+    container.register(AssetProcessorApiClientBuilder, {
+        useClass: AssetProcessorApiClientBuilder
+    });
+
+    container.register(DesignAtomsApiClientBuilder, {
+        useClass: DesignAtomsApiClientBuilder
+    });
+
+    container.register(StorefrontApiClientBuilder, {
+        useClass: StorefrontApiClientBuilder
+    });
+
+    container.register(BackOfficeApiClientBuilder, {
+        useClass: BackOfficeApiClientBuilder
+    });
+}
+
+
 
 export { registerDependencies, container };

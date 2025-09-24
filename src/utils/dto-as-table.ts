@@ -1,8 +1,14 @@
+import { container } from "tsyringe";
 import { emptyState } from "./chalks";
 import Table from 'cli-table3';
+import { Logger } from "winston";
 
-export function dtoAsTable<T> (dtos: T[], head: string[], entityNamePlural: string): string {
+export function dtoAsTable<T>(dtos: T[], head: string[], entityNamePlural: string): string {
+    const logger: Logger = container.resolve("Logger");
+    logger.debug("Entered dtoAsTable");
+
     if (!dtos || dtos.length === 0) {
+        logger.debug("Returning empty state");
         return emptyState(`No ${entityNamePlural} match your request`);
     }
 

@@ -39,7 +39,7 @@ export class StorefrontCommands {
             null, // types
             null, // skip
             null, // take
-            "LastModified DESC",
+            "Id DESC", // sorting
             searchString // search
         );
         const tenantId = this.backOfficeApi.getCurrentTenantId();

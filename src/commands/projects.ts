@@ -10,10 +10,19 @@ import { createWriteStream } from 'fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 
+import { VdpDataModel } from "@aurigma/axios-design-atoms-api-client";
+import { DesignAtomsApiClientBuilder } from 'src/services/design-atoms-api-client-builder';
+
 interface ProjectSearchOptions {
     storefrontId: number;
     period: DatePeriod;
 }
+
+export interface FindProjectsVDPOptions {
+    storefrontId: number,
+    orderIds: string[]
+}
+
 
 interface ProjectGetDesignOptions {
     projectId: number;
@@ -26,6 +35,7 @@ export class ProjectCommands {
 
     constructor(
         @inject(StorefrontApiClientBuilder) private readonly storefrontApi: StorefrontApiClientBuilder,
+        @inject(DesignAtomsApiClientBuilder) private readonly designAtomsApi: DesignAtomsApiClientBuilder,
         @inject(AssetStorageApiClientBuilder) private readonly assetStorageApi: AssetStorageApiClientBuilder,
         @inject(ProjectView) private readonly view: ProjectView,
         @inject("Logger") private readonly logger: Logger
@@ -61,7 +71,85 @@ export class ProjectCommands {
                 await this.listBySearchString(options, searchString || null);
             });
 
+        command
+            .command("view-vdp")
+            .description('Searches projects by order number, name, etc. (same as in BackOffice).')
+            .requiredOption("-s --storefrontId <number>", "A storefront ID.")
+            .option('-o, --orderIds <items>', 'Comma-separated list of ecommerce order IDs', (val: string, _: any) => val.split(","))
+            .argument("[searchString]", "A search string used to filter out projects.", "")
+            .action(async (searchString?: string, options?: FindProjectsVDPOptions) => {
+                this.logger.debug(`Entering "projects search" command. options=${JSON.stringify(options)}. Argument: ${searchString}`);
+                await this.findProjectsVDP(options);
+            });
+
         return command;
+    }
+
+    private async findProjectsVDP(options: FindProjectsVDPOptions): Promise<void> {
+        const projectsClient = await this.storefrontApi.buildProjectsApiClient();
+        const designAtomsServiceClient = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
+
+
+        const projects = (await Promise.all(options.orderIds
+            .map(async x => await projectsClient.getAll(
+                null, /* ownerId */
+                null, /* productReference */
+                null, /* status */
+                DatePeriod.All, /* datePeriod */
+                null, /* skip */
+                null, /* take */
+                "OrderId DESC", /* sorting */
+                x, /* search */
+                null, /* orderId */
+                null, /* processingStatus */
+                false, /* includeObsolete */
+                options.storefrontId, /* storefrontId */))))
+            .map(x => x.items ?? [])
+            .flat();
+
+        this.logger.info(`Found ${projects.length} projects.`);
+
+        const data = await Promise.all(projects
+            .map(x => ({
+                id: String(x.id),
+                orderNumber: x.orderNumber,
+                ownerId: x.ownerId || "",
+                designId: x.items?.map(x => x.designIds ?? []).flat()?.pop() || ""
+            }))
+            .map(async x => ({
+                id: x.id,
+                ownerId: x.ownerId,
+                orderNumber: x.orderNumber,
+                designId: x.designId,
+                vdp: await designAtomsServiceClient.loadVdpData(x.designId, x.ownerId)
+            })));
+
+        data.forEach(
+            x => {
+                this.logger.info(`Shopify order #${x.orderNumber}. Project ${x.id}. Design: ${x.designId} .`)
+                console.log(this.view.listVariables(this.getVdpData(x.vdp) ?? []));
+            });
+    }
+
+    private getVdpData(vdp: VdpDataModel) {
+        if (!vdp || !vdp?.vdpDataSet) {
+            this.logger.warn("No variable data");
+        }
+        return vdp
+            .vdpDataSet
+            .surfacesData
+            .map((x: any) => x.data)
+            .flat()
+            .map((x: any) => this.flattenStructure(x.rootItems));
+    }
+
+    private flattenStructure(vdpEntry: object) {
+        const keys = Object.getOwnPropertyNames(vdpEntry);
+        const result = {};
+        keys.forEach(k => {
+            result[k] = vdpEntry[k].text ?? vdpEntry[k].image ?? vdpEntry[k];
+        });
+        return result;
     }
 
     private async getDesignFromProject(options: ProjectGetDesignOptions) {
@@ -83,7 +171,7 @@ export class ProjectCommands {
                 .split(".")
                 .map((x, index) => index == 0 && seqNumber > 0 ? x + "_" + String(seqNumber).padStart(3, "0") : x)
                 .join(".");
-    
+
 
         designIds.forEach(async (design, index) => {
             this.logger.debug(`Trying to fetch design ${design}...`);

@@ -15,4 +15,9 @@ export class ProjectView {
         this.logger.debug("Entered ProjectView.listAsTable");
         return dtoAsTable(storefronts, ['id', 'name', 'storefrontId', 'orderNumber', 'created'], 'projects');
     }
+
+    listVariables(vdpFields: object[]) {
+        this.logger.debug("Entered ProjectView.listVariables");
+        return dtoAsTable(vdpFields, Object.getOwnPropertyNames(vdpFields[0] ?? {}), "variables");
+    }
 }

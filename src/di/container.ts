@@ -17,6 +17,7 @@ import { ProjectView } from "src/views/project";
 
 
 const registerDependencies = () => {
+
     container.register(
         "Logger",
         {

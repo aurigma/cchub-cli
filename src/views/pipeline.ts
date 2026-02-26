@@ -1,7 +1,7 @@
 import { ProcessingPipelineDto, StorefrontDto } from "@aurigma/axios-storefront-api-client";
 import { Logger } from "winston";
 import { injectable, inject } from "tsyringe";
-import { dtoAsTable } from "src/utils/dto-as-table";
+import { dtoAsTable } from "../utils/dto-as-table";
 
 @injectable()
 export class PipelineView {
@@ -12,6 +12,6 @@ export class PipelineView {
     }
 
     listAsTable(pipelines: ProcessingPipelineDto[]): string {
-        return dtoAsTable(pipelines, ['id', 'name', 'type', 'created'], 'processing pipelines');
+        return dtoAsTable(pipelines, ['id', 'name'], 'processing pipelines');
     }
 }

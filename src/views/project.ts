@@ -1,7 +1,7 @@
 import { StorefrontDto } from "@aurigma/axios-storefront-api-client";
 import { Logger } from "winston";
 import { injectable, inject } from "tsyringe";
-import { dtoAsTable } from "src/utils/dto-as-table";
+import { dtoAsTable } from "../utils/dto-as-table";
 
 @injectable()
 export class ProjectView {

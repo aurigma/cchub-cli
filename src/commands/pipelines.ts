@@ -1,8 +1,8 @@
 import { inject, injectable } from 'tsyringe';
 import { Logger } from "winston";
-import { PipelineView } from 'src/views/pipeline';
+import { PipelineView } from '../views/pipeline';
 import { Command } from 'commander';
-import { BackOfficeApiClientBuilder } from 'src/services/backoffice-api-client-builder';
+import { BackOfficeApiClientBuilder } from '../services/backoffice-api-client-builder';
 
 @injectable()
 export class PipelineCommands {
@@ -44,7 +44,9 @@ export class PipelineCommands {
         const tenantId = this.backOfficeApi.getCurrentTenantId();
         this.logger.info(`Found ${pipelines.total} pipelines for tenant ${tenantId}. `);
 
-        console.log(this.pipelineView.listAsTable(pipelines.items ?? []));
+        const items = pipelines.items ?? [];
+
+        console.log(this.pipelineView.listAsTable(items));
     }
 
 }

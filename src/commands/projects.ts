@@ -5,13 +5,14 @@ import { Command } from 'commander';
 import { DatePeriod } from '@aurigma/axios-storefront-api-client';
 import { emptyState } from '../utils/chalks';
 import { StorefrontApiClientBuilder } from '../services/storefront-api-client-builder';
-import { AssetStorageApiClientBuilder } from 'src/services/asset-storage-api-client-builder';
+import { AssetStorageApiClientBuilder } from '../services/asset-storage-api-client-builder';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
+import type { ReadableStream as NodeWebReadableStream } from 'node:stream/web';
 
 import { VdpDataModel } from "@aurigma/axios-design-atoms-api-client";
-import { DesignAtomsApiClientBuilder } from 'src/services/design-atoms-api-client-builder';
+import { DesignAtomsApiClientBuilder } from '../services/design-atoms-api-client-builder';
 
 interface ProjectSearchOptions {
     storefrontId: number;
@@ -173,17 +174,19 @@ export class ProjectCommands {
                 .join(".");
 
 
-        designIds.forEach(async (design, index) => {
+        for (const [index, design] of designIds.entries()) {
             this.logger.debug(`Trying to fetch design ${design}...`);
             const file = await privateDesignClient.getFile(design, false, tenantId, ownerId);
             const filename = typeof options.outFile == 'string' ? makeSeqFileName(options.outFile, index) : design + ".st";
             try {
-                pipeline(Readable.from(file.data.stream()), createWriteStream(filename));
+                const webStream = file.data.stream() as unknown as NodeWebReadableStream<Uint8Array>;
+                const source = Readable.fromWeb(webStream);
+                await pipeline(source, createWriteStream(filename));
                 this.logger.info(`Successfully saved file to ${filename}`);
             } catch (error) {
                 this.logger.error(`Failed to fetch design ${design} and/or save a file to ${filename}. Error: ${error}`);
             }
-        });
+        }
     }
 
     private async listBySearchString(options: ProjectSearchOptions, searchString?: string) {

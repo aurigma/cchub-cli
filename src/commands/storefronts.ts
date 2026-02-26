@@ -1,8 +1,8 @@
 import { inject, injectable } from 'tsyringe';
 import { Logger } from "winston";
-import { StorefrontView } from 'src/views/storefronts';
+import { StorefrontView } from '../views/storefronts';
 import { Command } from 'commander';
-import { BackOfficeApiClientBuilder } from 'src/services/backoffice-api-client-builder';
+import { BackOfficeApiClientBuilder } from '../services/backoffice-api-client-builder';
 
 @injectable()
 export class StorefrontCommands {

@@ -1,4 +1,4 @@
-import { ApiClientConfiguration, DesignsApiClient, PrivateDesignsApiClient } from "@aurigma/axios-asset-storage-api-client";
+import { ApiClientConfiguration, DesignsApiClient, FontsApiClient, PrivateDesignsApiClient } from "@aurigma/axios-asset-storage-api-client";
 import { BaseCCHubApiClientBuilder, IApiClientConfiguration } from "./base-cchub-api-client-builder";
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
@@ -21,14 +21,23 @@ export class AssetStorageApiClientBuilder extends BaseCCHubApiClientBuilder {
     }
 
     public async buildPrivateDesignApiClient(): Promise<PrivateDesignsApiClient> {
+        this.logger.debug("Entered AssetStorageApiClientBuilder.buildPrivateDesignApiClient.");
         const apiClientConfig = await this.initApiClientConfiguration() as ApiClientConfiguration;
 
         return new PrivateDesignsApiClient(apiClientConfig);
     }
 
     public async buildDesignApiClient(): Promise<DesignsApiClient> {
+        this.logger.debug("Entered AssetStorageApiClientBuilder.buildDesignApiClient.");
         const apiClientConfig = await this.initApiClientConfiguration() as ApiClientConfiguration;
 
         return new DesignsApiClient(apiClientConfig);
-    }    
+    }
+
+    public async buildFontsApiClient(): Promise<FontsApiClient> {
+        this.logger.debug("Entered AssetStorageApiClientBuilder.buildFontsApiClient.");
+        const apiClientConfig = await this.initApiClientConfiguration() as ApiClientConfiguration;
+
+        return new FontsApiClient(apiClientConfig);
+    }
 }

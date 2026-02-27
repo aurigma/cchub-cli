@@ -6,6 +6,7 @@ import { StorefrontCommands } from "./commands/storefronts.js";
 import { registerDependencies, container } from "./di/container.js";
 import { PipelineCommands } from "./commands/pipelines.js";
 import { ProjectCommands } from "./commands/projects.js";
+import { AssetsCommands } from "./commands/assets.js";
 import { Logger } from "winston";
 
 dotenv.config();
@@ -28,5 +29,6 @@ program
 container.resolve(StorefrontCommands).addCli(program);
 container.resolve(PipelineCommands).addCli(program);
 container.resolve(ProjectCommands).addCli(program);
+container.resolve(AssetsCommands).addCli(program);
 
 program.parse();

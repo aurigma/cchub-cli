@@ -14,6 +14,8 @@ import { DesignAtomsApiClientBuilder } from "../services/design-atoms-api-client
 import { StorefrontApiClientBuilder } from "../services/storefront-api-client-builder";
 import { BackOfficeApiClientBuilder } from "../services/backoffice-api-client-builder";
 import { ProjectView } from "../views/project";
+import { AssetsCommands } from "../commands/assets";
+import { FontsView } from "../views/fonts";
 
 
 const registerDependencies = () => {
@@ -39,20 +41,10 @@ const registerDependencies = () => {
         });
 
     registerApiClientBuilders();
+    registerServices();
     registerViews();
     registerCommands();
 
-    // Регистрация сервисов
-    container.register(
-        CCHubConfiguration,
-        { useClass: CCHubConfiguration },
-        { lifecycle: Lifecycle.Singleton }
-    );
-
-    container.register(CCHubAuth,
-        { useClass: CCHubAuth },
-        { lifecycle: Lifecycle.Singleton }
-    );
 };
 
 function registerViews() {
@@ -67,6 +59,10 @@ function registerViews() {
     container.register(ProjectView,
         { useClass: ProjectView }
     );
+
+    container.register(FontsView,
+        { useClass: FontsView }
+    );
 }
 
 function registerCommands() {
@@ -80,6 +76,10 @@ function registerCommands() {
 
     container.register(ProjectCommands, {
         useClass: ProjectCommands
+    });
+
+    container.register(AssetsCommands, {
+        useClass: AssetsCommands
     });
 }
 
@@ -103,6 +103,19 @@ function registerApiClientBuilders() {
     container.register(BackOfficeApiClientBuilder, {
         useClass: BackOfficeApiClientBuilder
     });
+}
+
+function registerServices() {
+    container.register(
+        CCHubConfiguration,
+        { useClass: CCHubConfiguration },
+        { lifecycle: Lifecycle.Singleton }
+    );
+
+    container.register(CCHubAuth,
+        { useClass: CCHubAuth },
+        { lifecycle: Lifecycle.Singleton }
+    );
 }
 
 

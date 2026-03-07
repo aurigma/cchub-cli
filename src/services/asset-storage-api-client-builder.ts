@@ -1,4 +1,4 @@
-import { ApiClientConfiguration, DesignsApiClient, FontsApiClient, PrivateDesignsApiClient } from "@aurigma/axios-asset-storage-api-client";
+import { ApiClientConfiguration, ArtifactsApiClient, DesignsApiClient, FontsApiClient, PrivateDesignsApiClient } from "@aurigma/axios-asset-storage-api-client";
 import { BaseCCHubApiClientBuilder, IApiClientConfiguration } from "./base-cchub-api-client-builder";
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
@@ -39,5 +39,12 @@ export class AssetStorageApiClientBuilder extends BaseCCHubApiClientBuilder {
         const apiClientConfig = await this.initApiClientConfiguration() as ApiClientConfiguration;
 
         return new FontsApiClient(apiClientConfig);
+    }
+
+    public async buildArtifactsApiClient(): Promise<ArtifactsApiClient> {
+        this.logger.debug("Entered AssetStorageApiClientBuilder.buildArtifactsApiClient.");
+        const apiClientConfig = await this.initApiClientConfiguration() as ApiClientConfiguration;
+
+        return new ArtifactsApiClient(apiClientConfig);
     }
 }

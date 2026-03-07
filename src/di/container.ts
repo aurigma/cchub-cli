@@ -14,9 +14,17 @@ import { DesignAtomsApiClientBuilder } from "../services/design-atoms-api-client
 import { StorefrontApiClientBuilder } from "../services/storefront-api-client-builder";
 import { BackOfficeApiClientBuilder } from "../services/backoffice-api-client-builder";
 import { ProjectView } from "../views/project";
+import { GenerateCommands } from "../commands/generate";
+import { DesignGenerator } from "../services/design-generator";
+import { DesignSaveService } from "../services/design-save-service";
 import { AssetsCommands } from "../commands/assets";
+import { AssetsFontsCommands } from "../commands/assets/fonts";
+import { AssetsPrivateDesignsCommands } from "../commands/assets/private-designs";
 import { FontsView } from "../views/fonts";
+import { PrivateDesignsView } from "../views/private-designs";
+import { ProjectsCreateCommands } from "../commands/projects/create";
 
+import { JsonProductSerializer } from "@aurigma/design-atoms/Serialization";
 
 const registerDependencies = () => {
 
@@ -63,6 +71,10 @@ function registerViews() {
     container.register(FontsView,
         { useClass: FontsView }
     );
+
+    container.register(PrivateDesignsView,
+        { useClass: PrivateDesignsView }
+    );
 }
 
 function registerCommands() {
@@ -78,8 +90,24 @@ function registerCommands() {
         useClass: ProjectCommands
     });
 
+    container.register(GenerateCommands, {
+        useClass: GenerateCommands
+    });
+
     container.register(AssetsCommands, {
         useClass: AssetsCommands
+    });
+
+    container.register(AssetsFontsCommands, {
+        useClass: AssetsFontsCommands
+    });
+
+    container.register(AssetsPrivateDesignsCommands, {
+        useClass: AssetsPrivateDesignsCommands
+    });
+
+    container.register(ProjectsCreateCommands, {
+        useClass: ProjectsCreateCommands
     });
 }
 
@@ -116,6 +144,16 @@ function registerServices() {
         { useClass: CCHubAuth },
         { lifecycle: Lifecycle.Singleton }
     );
+
+    container.registerInstance(JsonProductSerializer, new JsonProductSerializer())
+
+    container.register(DesignGenerator, {
+        useClass: DesignGenerator
+    });
+
+    container.register(DesignSaveService, {
+        useClass: DesignSaveService
+    });
 }
 
 

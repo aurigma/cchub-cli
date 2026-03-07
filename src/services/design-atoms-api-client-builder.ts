@@ -1,4 +1,4 @@
-import { ApiClientConfiguration, DesignAtomsImagesApiClient, DesignAtomsServiceApiClient } from "@aurigma/axios-design-atoms-api-client";
+import { ApiClientConfiguration, DesignAtomsImagesApiClient, DesignAtomsServiceApiClient, DesignAtomsPrintProductItemsApiClient } from "@aurigma/axios-design-atoms-api-client";
 import { BaseCCHubApiClientBuilder, IApiClientConfiguration } from "./base-cchub-api-client-builder";
 import { inject, injectable } from "tsyringe";
 import { CCHubAuth } from "./cchub-auth";
@@ -7,7 +7,7 @@ import { Logger } from "winston";
 
 @injectable()
 export class DesignAtomsApiClientBuilder extends BaseCCHubApiClientBuilder {
- 
+
      constructor(
         @inject("Logger") logger: Logger,
         @inject(CCHubAuth) authService: CCHubAuth,
@@ -30,5 +30,11 @@ export class DesignAtomsApiClientBuilder extends BaseCCHubApiClientBuilder {
         const apiClientConfig = await this.initApiClientConfiguration() as ApiClientConfiguration;
 
         return new DesignAtomsServiceApiClient(apiClientConfig);
+    }
+
+    public async buildDesignAtomsPrintProductItemsApiClient(): Promise<DesignAtomsPrintProductItemsApiClient> {
+        const apiClientConfig = await this.initApiClientConfiguration() as ApiClientConfiguration;
+
+        return new DesignAtomsPrintProductItemsApiClient(apiClientConfig);
     }
 }

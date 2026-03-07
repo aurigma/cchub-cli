@@ -2,14 +2,16 @@ import { inject, injectable } from 'tsyringe';
 import { Logger } from "winston";
 import { ProjectView } from '../views/project';
 import { Command } from 'commander';
-import { DatePeriod } from '@aurigma/axios-storefront-api-client';
+import {
+    DatePeriod,
+    ProjectOutputFileDetailsDto,
+    ProjectProcessingStatus,
+} from '@aurigma/axios-storefront-api-client';
 import { emptyState } from '../utils/chalks';
 import { StorefrontApiClientBuilder } from '../services/storefront-api-client-builder';
 import { AssetStorageApiClientBuilder } from '../services/asset-storage-api-client-builder';
-import { createWriteStream } from 'fs';
-import { pipeline } from 'node:stream/promises';
-import { Readable } from 'node:stream';
-import type { ReadableStream as NodeWebReadableStream } from 'node:stream/web';
+import { saveFileResponseToDisk } from '../utils/save-file-response';
+import { ProjectsCreateCommands } from './projects/create';
 
 import { VdpDataModel } from "@aurigma/axios-design-atoms-api-client";
 import { DesignAtomsApiClientBuilder } from '../services/design-atoms-api-client-builder';
@@ -30,6 +32,11 @@ interface ProjectGetDesignOptions {
     outFile: string | boolean;
 }
 
+interface ProjectProcessingStatusOptions {
+    projectId: number;
+    download?: boolean;
+}
+
 
 @injectable()
 export class ProjectCommands {
@@ -38,11 +45,13 @@ export class ProjectCommands {
         @inject(StorefrontApiClientBuilder) private readonly storefrontApi: StorefrontApiClientBuilder,
         @inject(DesignAtomsApiClientBuilder) private readonly designAtomsApi: DesignAtomsApiClientBuilder,
         @inject(AssetStorageApiClientBuilder) private readonly assetStorageApi: AssetStorageApiClientBuilder,
+        @inject(ProjectsCreateCommands) private readonly createCommands: ProjectsCreateCommands,
         @inject(ProjectView) private readonly view: ProjectView,
         @inject("Logger") private readonly logger: Logger
     ) {
         this.storefrontApi = storefrontApi;
         this.assetStorageApi = assetStorageApi;
+        this.createCommands = createCommands;
         this.view = view;
         this.logger = logger;
     }
@@ -50,6 +59,8 @@ export class ProjectCommands {
     public addCli(parentCommand: Command) {
         const command = parentCommand.command("projects")
             .description('Allows to work with the tenant\'s projects');
+
+        this.createCommands.addCli(command);
 
         command
             .command("get-design")
@@ -83,7 +94,74 @@ export class ProjectCommands {
                 await this.findProjectsVDP(options);
             });
 
+        command
+            .command("processing-status")
+            .description("Gets project processing status and output artifacts")
+            .requiredOption("-i --projectId <number>", "A project ID.")
+            .option("--download", "Download completed output artifacts")
+            .action(async (options: ProjectProcessingStatusOptions) => {
+                this.logger.debug(`Entering "projects processing-status" command. options=${JSON.stringify(options)}.`);
+                await this.getProjectProcessingStatus(options);
+            });
+
         return command;
+    }
+
+    private async getProjectProcessingStatus(options: ProjectProcessingStatusOptions): Promise<void> {
+        this.logger.debug(`Entered ProjectCommands.getProjectProcessingStatus. options=${JSON.stringify(options)}.`);
+
+        try {
+            const projectId = Number.parseInt(String(options.projectId), 10);
+            if (Number.isNaN(projectId)) {
+                this.logger.error(`Invalid projectId: ${options.projectId}`);
+                process.exitCode = 2;
+                return;
+            }
+
+            const projectsClient = await this.storefrontApi.buildProjectsApiClient();
+            const result = await projectsClient.getProjectProcessingResults(projectId, null, null);
+
+            console.log(this.view.processingResults(result));
+
+            if (result?.status === ProjectProcessingStatus.Completed) {
+                const details = result.outputFileDetails ?? [];
+                if (options.download) {
+                    await this.downloadOutputArtifacts(details);
+                }
+            }
+
+        } catch (error) {
+            this.logger.error(`Failed to get project processing status. Error: ${error}`);
+            process.exitCode = 1;
+        }
+    }
+
+    private async downloadOutputArtifacts(details: ProjectOutputFileDetailsDto[]): Promise<void> {
+        this.logger.debug(`Entered ProjectCommands.downloadOutputArtifacts. items=${details?.length ?? 0}.`);
+
+        const artifactsClient = await this.assetStorageApi.buildArtifactsApiClient();
+        const tenantId = this.assetStorageApi.getCurrentTenantId();
+
+        for (const item of details) {
+            const artifactId = item?.artifactId;
+            if (!artifactId) {
+                this.logger.warning("Skipping artifact download because artifactId is missing.");
+                continue;
+            }
+
+            try {
+                const artifact = await artifactsClient.get(artifactId, tenantId);
+                let filename = artifact?.name?.trim() ? artifact.name.trim() : artifactId;
+                if (artifact.format) {
+                    filename += `.${artifact.format.toLowerCase()}`;
+                }
+                const file = await artifactsClient.getFile(artifactId, false, tenantId);
+                await saveFileResponseToDisk(file, filename);
+                this.logger.info(`Artifact downloaded: ${artifactId} -> ${filename}`);
+            } catch (error) {
+                this.logger.warn(`Failed to download artifact ${artifactId}. Error: ${error}`);
+            }
+        }
     }
 
     private async findProjectsVDP(options: FindProjectsVDPOptions): Promise<void> {
@@ -179,9 +257,7 @@ export class ProjectCommands {
             const file = await privateDesignClient.getFile(design, false, tenantId, ownerId);
             const filename = typeof options.outFile == 'string' ? makeSeqFileName(options.outFile, index) : design + ".st";
             try {
-                const webStream = file.data.stream() as unknown as NodeWebReadableStream<Uint8Array>;
-                const source = Readable.fromWeb(webStream);
-                await pipeline(source, createWriteStream(filename));
+                await saveFileResponseToDisk(file, filename);
                 this.logger.info(`Successfully saved file to ${filename}`);
             } catch (error) {
                 this.logger.error(`Failed to fetch design ${design} and/or save a file to ${filename}. Error: ${error}`);

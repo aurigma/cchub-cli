@@ -12,6 +12,11 @@ interface GenerateHelloWorldOptions {
     image?: string;
 }
 
+interface GenerateVdpDesignOptions {
+    ownerId: string;
+    filename: string;
+}
+
 @injectable()
 export class GenerateCommands {
 
@@ -39,6 +44,15 @@ export class GenerateCommands {
                 await this.handleHelloWorld(options);
             });
 
+        command
+            .command("sample-vdp-design")
+            .description("Generates a design to test VDP functionality.")
+            .option("-f, --filename <filename>", "A target filename.")
+            .option("-o, --ownerId <ownerId>", "A target owner ID. Omit to make it public.")
+            .action(async (options: GenerateVdpDesignOptions) => {
+                await this.handleSampleVdpDesign(options);
+            });
+
         return command;
     }
 
@@ -60,14 +74,38 @@ export class GenerateCommands {
                 await this.designSaveService.saveAsPreview(helloWorldProduct, options.filename);
             } else {
                 this.logger.debug(`Target branch selected: cchub. filename=${options.filename}`);
-                await this.designSaveService.saveToCCHub(helloWorldProduct, options.filename);
+                const newDesignId = await this.designSaveService.saveToCCHub(helloWorldProduct, undefined, options.filename);
+                console.log(newDesignId);
             }
 
             this.logger.info(`Hello-world design generation completed successfully. target=${options.target}, filename=${options.filename}`);
         } catch (error) {
             this.logger.error(`Failed to execute "generate hello-world". Error: ${error}`);
-            console.error("Failed to execute command 'generate hello-world'.");
             process.exitCode = 1;
         }
+    }
+
+    private async handleSampleVdpDesign(options: GenerateVdpDesignOptions) {
+        this.logger.debug(`Entered GenerateCommands.handleSampleVdpDesign.`);
+
+        try {
+            this.logger.debug(`Attempting to generate a design...`);
+            const vdpDesign = await this.designGenerator.generateVdpDesign();
+
+            const timestamp = new Date().valueOf();
+            const filename = `${options.filename ?? "VDP"} [${timestamp}]`;
+            this.logger.debug(`Attempting to save a design as ${filename}`);
+
+            const newDesignId = await this.designSaveService.saveToCCHub(vdpDesign, options.ownerId, filename);
+
+            this.logger.info(`Sample VDP design generation completed successfully.`);
+
+            console.log(newDesignId);
+        } catch (error) {
+            this.logger.error(`Failed to execute "generate sample-vdp-design". Error: ${error}`);
+            process.exitCode = 1;
+        }
+
+
     }
 }

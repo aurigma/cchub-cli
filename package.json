@@ -8,7 +8,8 @@
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "build": "npm run clean && tsc && npm run bundle",
     "bundle": "tsup --config tsup.config.js",
-    "dev": "cross-env NODE_OPTIONS=\"--import tsx\" tsx src/index.ts",
+    "dev": "tsx src/index.ts",
+    "debug": "npm run dev --  projects create through-pipeline -s 1306 -d 0d4e1cf0-7755-4350-a46e-aa3d11b446f1 -o test -p 301",
     "start": "node dist/cchub-cli.js"
   },
   "dependencies": {

@@ -65,8 +65,8 @@ export class ProjectCommands {
         command
             .command("get-design")
             .description('Download a design file from a specified project.')
-            .requiredOption("-i --projectId <number>", "A project ID where to extract a design.")
-            .option("-o --out-file <string>", "A location and file name to save it on a local machine. Omit it to use the design ID as a name.", false)
+            .requiredOption("-i, --projectId <number>", "A project ID where to extract a design.")
+            .option("-o, --out-file <string>", "A location and file name to save it on a local machine. Omit it to use the design ID as a name.", false)
             .action((options: ProjectGetDesignOptions) => {
                 this.logger.debug(`Entering "projects get-design" command. options=${JSON.stringify(options)}.`);
                 this.getDesignFromProject(options);
@@ -75,8 +75,8 @@ export class ProjectCommands {
         command
             .command("search")
             .description('Searches projects by order number, name, etc. (same as in BackOffice).')
-            .requiredOption("-s --storefrontId <number>", "A storefront ID.")
-            .option("-p --period <string>", "A period - All, Today, Last7Days or Last30Days (default).", DatePeriod.Last30Days)
+            .requiredOption("-s, --storefrontId <number>", "A storefront ID.")
+            .option("-p, --period <string>", "A period - All, Today, Last7Days or Last30Days (default).", DatePeriod.Last30Days)
             .argument("[searchString]", "A search string used to filter out projects.", "")
             .action(async (searchString?: string, options?: ProjectSearchOptions) => {
                 this.logger.debug(`Entering "projects search" command. options=${JSON.stringify(options)}. Argument: ${searchString}`);
@@ -86,7 +86,7 @@ export class ProjectCommands {
         command
             .command("view-vdp")
             .description('Searches projects by order number, name, etc. (same as in BackOffice).')
-            .requiredOption("-s --storefrontId <number>", "A storefront ID.")
+            .requiredOption("-s, --storefrontId <number>", "A storefront ID.")
             .option('-o, --orderIds <items>', 'Comma-separated list of ecommerce order IDs', (val: string, _: any) => val.split(","))
             .argument("[searchString]", "A search string used to filter out projects.", "")
             .action(async (searchString?: string, options?: FindProjectsVDPOptions) => {
@@ -97,7 +97,7 @@ export class ProjectCommands {
         command
             .command("processing-status")
             .description("Gets project processing status and output artifacts")
-            .requiredOption("-i --projectId <number>", "A project ID.")
+            .requiredOption("-i, --projectId <number>", "A project ID.")
             .option("--download", "Download completed output artifacts")
             .action(async (options: ProjectProcessingStatusOptions) => {
                 this.logger.debug(`Entering "projects processing-status" command. options=${JSON.stringify(options)}.`);
@@ -218,17 +218,7 @@ export class ProjectCommands {
             .vdpDataSet
             .surfacesData
             .map((x: any) => x.data)
-            .flat()
-            .map((x: any) => this.flattenStructure(x.rootItems));
-    }
-
-    private flattenStructure(vdpEntry: object) {
-        const keys = Object.getOwnPropertyNames(vdpEntry);
-        const result = {};
-        keys.forEach(k => {
-            result[k] = vdpEntry[k].text ?? vdpEntry[k].image ?? vdpEntry[k];
-        });
-        return result;
+            .flat();
     }
 
     private async getDesignFromProject(options: ProjectGetDesignOptions) {

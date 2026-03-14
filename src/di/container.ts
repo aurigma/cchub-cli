@@ -17,9 +17,12 @@ import { ProjectView } from "../views/project";
 import { GenerateCommands } from "../commands/generate";
 import { DesignGenerator } from "../services/design-generator";
 import { DesignSaveService } from "../services/design-save-service";
+import { VdpDatasetCsvConverter } from "../services/vdp-dataset-csv-converter";
 import { AssetsCommands } from "../commands/assets";
+import { AssetsDesignsCommands } from "../commands/assets/designs";
 import { AssetsFontsCommands } from "../commands/assets/fonts";
 import { AssetsPrivateDesignsCommands } from "../commands/assets/private-designs";
+import { DesignsView } from "../views/designs";
 import { FontsView } from "../views/fonts";
 import { PrivateDesignsView } from "../views/private-designs";
 import { ProjectsCreateCommands } from "../commands/projects/create";
@@ -72,6 +75,10 @@ function registerViews() {
         { useClass: FontsView }
     );
 
+    container.register(DesignsView,
+        { useClass: DesignsView }
+    );
+
     container.register(PrivateDesignsView,
         { useClass: PrivateDesignsView }
     );
@@ -96,6 +103,10 @@ function registerCommands() {
 
     container.register(AssetsCommands, {
         useClass: AssetsCommands
+    });
+
+    container.register(AssetsDesignsCommands, {
+        useClass: AssetsDesignsCommands
     });
 
     container.register(AssetsFontsCommands, {
@@ -153,6 +164,10 @@ function registerServices() {
 
     container.register(DesignSaveService, {
         useClass: DesignSaveService
+    });
+
+    container.register(VdpDatasetCsvConverter, {
+        useClass: VdpDatasetCsvConverter
     });
 }
 

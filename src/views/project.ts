@@ -4,6 +4,8 @@ import { injectable, inject } from "tsyringe";
 import { dtoAsTable } from "../utils/dto-as-table";
 import { formatByteSize } from "../utils/format-file-size";
 import { success, error, msg } from "src/utils/chalks";
+import { DesignProblemDto } from "@aurigma/axios-asset-processor-api-client";
+import chalk from "chalk";
 
 @injectable()
 export class ProjectView {
@@ -28,6 +30,14 @@ export class ProjectView {
         return dtoAsTable([project], ["id", "name", "status", "processingStatus"], "projects");
     }
 
+    visualizeDesignProblems(checkResults: DesignProblemDto) {
+        return Object
+            .entries(checkResults)
+            .filter(entry => entry[1] != null && (Array.isArray(entry[1]) && entry[1].length > 0))
+            .map(entry => `${chalk.bold(entry[0])}\n\n${this.formatValue(entry[1])}\n`)
+            .reduce((acc, cur) => acc + "\n" + cur + "\n", "")
+    }
+
     processingResults(result: ProjectProcessingResultsDto): string {
         this.logger.debug(`Entered ProjectView.processingResults. status=${result?.status}.`);
 
@@ -46,6 +56,17 @@ export class ProjectView {
         }
 
         return output;
+    }
+
+    private formatValue(value: any) {
+        switch(true) {
+            case Array.isArray(value): 
+                return value.map(x => this.formatValue(x)).join("\n- ");
+            case typeof value === "object":
+                return JSON.stringify(value);
+            default:
+                return value.toLocaleString();
+        }
     }
 
     private formatProcessingStatus(status: ProjectProcessingStatus) {

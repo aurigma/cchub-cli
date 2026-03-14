@@ -58,7 +58,7 @@ export class DesignSaveService {
         this.logger.info(`Preview file saved successfully to ${filename}`);
     }
 
-    public async saveToCCHub(product: Product, filename: string): Promise<void> {
+    public async saveToCCHub(product: Product, ownerId: string, filename: string) {
         this.logger.debug(`Entered DesignSaveService.saveToCCHub. filename=${filename}`);
         const designAtomsService = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
 
@@ -66,13 +66,20 @@ export class DesignSaveService {
             Here we create a public design template, so we don't specify the 
             owner ID, but specify a location (for simplicity - to the root).
          */
-        const { id, name } = await designAtomsService.createDesign(null, this.designAtomsApi.getCurrentTenantId(), {
+        const { id, name } = await designAtomsService.createDesign(ownerId, undefined, {
             product: this.serializeProduct(product),
             name: filename,
             path: "/"
         });
 
-        this.logger.info(`Created a design with id=${id} as ${name}`);
+        if (ownerId) {
+            this.logger.info(`Created a private design for ownerId=${ownerId} with id=${id} as ${name}`);
+        }
+        else {
+            this.logger.info(`Created a public design with id=${id} as ${name}`);
+        }
+
+        return id;
     }
 
     private serializeProduct(product: Product): string {

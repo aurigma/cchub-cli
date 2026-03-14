@@ -1,7 +1,7 @@
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { DesignAtomsApiClientBuilder } from "./design-atoms-api-client-builder";
-import { CmykColor, ImageItem, PlainTextItem, PointF, PrintArea, Product, RectangleF, SizeF, Surface } from "@aurigma/design-atoms-model";
+import { BoundedTextItem, CmykColor, Container, FirstBaselineOffset, ImageItem, LineItem, Matrix, PlainTextItem, PointF, PrintArea, Product, RectangleF, RgbColor, RgbColors, SizeF, Surface, Transform } from "@aurigma/design-atoms-model";
 import { Margin } from "@aurigma/design-atoms-model/Math/Margin";
 import { JsonProductSerializer } from "@aurigma/design-atoms/Serialization";
 import { existsSync, readFileSync } from "node:fs";
@@ -29,8 +29,8 @@ export class DesignGenerator {
         //
         // See description of the text format at 
         // https://www.graphicsmill.com/docs/gm/advanced-formatted-text.htm
-        
-        
+
+
         /*
             For simplicity, let's assume that you have already uploaded 
             this font to your tenant (if not, this one can be found on 
@@ -43,22 +43,17 @@ export class DesignGenerator {
         const fontSize = 14;
 
         const textPosition = new PointF(30, 40);
-        
-        const helloWorldTextItem = new PlainTextItem(
-            textContent, 
-            textPosition, 
-            fontPostscriptName,
-            fontSize 
-        );
 
-        const imageItem = await this.createImageItem(imageSource);
-        // Move image to the right and down by 50 pixels
-        imageItem.transform.setTranslateX(50);
-        imageItem.transform.setTranslateY(50);
+        const helloWorldTextItem = new PlainTextItem(
+            textContent,
+            textPosition,
+            fontPostscriptName,
+            fontSize
+        );
 
         // ICC profile should be available in the tenant (Assets > Color Profiles). 
         // Color components are bytes.
-        
+
         const textColor = new CmykColor(255, 128, 64, 32, 255, "U.S. Web Coated (SWOP) v2");
 
         helloWorldTextItem.color = textColor;
@@ -72,9 +67,73 @@ export class DesignGenerator {
         */
         const mainContainer = product.surfaces.get(0).containers.get(1);
         mainContainer.items.add(helloWorldTextItem);
-        mainContainer.items.add(imageItem);
+
+        await this.tryAddImage(mainContainer, imageSource);
+        this.addBoundedText(mainContainer,
+            `<p><span style="ot:dlig">first official act</span></p>
+            <p><span style=\"bold: true\">Lorum</span> ipsum</p>`,
+            new RectangleF(20, 225, 400, 300),
+            "IM_FELL_English_Roman",
+            24
+        );
 
         return product;
+    }
+
+    public generateVdpDesign() {
+
+        // envelope #10 sized product
+        const product = this.buildBlankSinglePageProduct(9.5, 4.125, 0);
+        const mainContainer = product.surfaces.get(0).containers.get(1);
+
+        const variablePlainText = new PlainTextItem(
+            "Name",
+            new PointF(48, 72),
+            "Montserrat-SemiBold",
+            36
+        );
+
+        variablePlainText.isVariable = true;
+        variablePlainText.name = "Name";
+
+        const interpolatedStringTextArea = new BoundedTextItem(
+            "<p><span style='bold: true'>{{Company}}</span><br/><span>{{Address Line 1}}<br/>{{Address Line 2}}<br/>{{City}} {{State}},{{Zip}}</span></p>",
+            new RectangleF(variablePlainText.baselineLocation.x, variablePlainText.baselineLocation.y + 36, 546, 144),
+            "HelveticaNeueLTStd-Bd",
+            16
+        )
+
+        mainContainer.items.add(variablePlainText);
+        mainContainer.items.add(interpolatedStringTextArea);
+
+        return product;
+    }
+
+    private addBoundedText(container: Container, content: string, bounds: RectangleF, postscriptName: string, fontSize: number) {
+        const textElement = new BoundedTextItem(content, bounds, postscriptName, fontSize);
+        textElement.firstBaselineMinOffset = 10;
+        textElement.firstBaselineOffset = FirstBaselineOffset.EmboxHeight;
+
+        textElement.borderWidth = 1;
+        textElement.borderColor = RgbColors.black;
+
+        const horizontalGap = 5;
+        const measureLine = new LineItem(new PointF(bounds.left - horizontalGap, bounds.top), new PointF(bounds.left - horizontalGap, bounds.top + textElement.firstBaselineMinOffset));
+        const measureLine2 = new LineItem(new PointF(bounds.left - horizontalGap * 2, bounds.top), new PointF(bounds.left - horizontalGap * 2, bounds.top + fontSize));
+
+        container.items.add(textElement);
+        container.items.add(measureLine);
+        container.items.add(measureLine2);
+    }
+
+    private async tryAddImage(container: Container, imageSource: string) {
+        if (!imageSource) return;
+
+        const imageItem = await this.createImageItem(imageSource);
+        // Move image to the right and down by 50 pixels
+        imageItem.transform.applyMatrix(new Matrix(0.5, 0, 0, 0.25, 0, 0));
+
+        container.items.add(imageItem);
     }
 
     private buildBlankSinglePageProduct(widthInch: number, heightInch: number, bleedInch: number): Product {
@@ -87,9 +146,9 @@ export class DesignGenerator {
          */
         const pageBoundsInch = new RectangleF(0, 0, widthInch, heightInch);
         const pageBoundsPoints = this.inchToPoint(pageBoundsInch);
-        
-        const bleedPoints = bleedInch * 72; 
-        
+
+        const bleedPoints = bleedInch * 72;
+
         const printArea = new PrintArea(pageBoundsPoints, new Margin(bleedPoints));
 
         /*
@@ -137,7 +196,7 @@ export class DesignGenerator {
 
         const tenantId = this.designAtomsApi.getCurrentTenantId();
         const imageItem = await designAtomsPrintProductItemsApiClient.createItemFromUrl(ItemType.Image, tenantId, { url });
-        
+
         return this.jsonProductSerializer.productParser.parseItem(imageItem) as ImageItem;
     }
 
@@ -146,7 +205,7 @@ export class DesignGenerator {
 
         const tenantId = this.designAtomsApi.getCurrentTenantId();
         const imageItem = await designAtomsPrintProductItemsApiClient.createItemFromStorage(ItemType.Image, tenantId, { sourceId: id });
-        
+
         return this.jsonProductSerializer.productParser.parseItem(imageItem) as ImageItem;
     }
 

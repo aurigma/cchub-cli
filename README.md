@@ -1,8 +1,6 @@
 # Hello World CLI Application
 
-This is a simple command-line interface (CLI) application built with Node.js and TypeScript to work with Customer's Canvas Hub API.
-It demonstrates how to construct Customer's Canvas designs programmatically (through Design Atoms SDK) and submit it to the
-Customer's Canvas backend.
+This is a simple command-line interface (CLI) application built with Node.js and TypeScript to work with Customer's Canvas Hub API. It demonstrates how to construct Customer's Canvas designs programmatically (through Design Atoms SDK) and submit it to the Customer's Canvas backend.
 
 ## Installation
 
@@ -69,6 +67,23 @@ This command produces a single distributable CLI file:
 dist/cchub-cli.js
 ```
 
+## Debug in VS Code
+
+Open **package.json** and modify the **debug** script to specify which command you would like to test:
+
+```json
+{
+    ...
+  "scripts": {
+    ...
+    "debug": "npm run dev --  projects create through-pipeline -s 1306 -d 0d4e1cf0-7755-4350-a46e-aa3d11b446f1 -o test -p 301",
+    ...
+  },
+}
+```
+
+Then just add a breakpoint, hit F5. Choose **cchub-cli: Launch** configuration.
+
 ## Distribution
 
 For distribution, you can ship only:
@@ -81,13 +96,3 @@ Runtime requirements:
 
 - Node.js 18+.
 - Environment variables from `.env` (or system environment variables), as described in the Configuration section.
-
-To run tests, use:
-
-```bash
-npm test
-```
-
-## License
-
-This project is licensed under the MIT License.

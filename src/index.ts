@@ -9,6 +9,7 @@ import { ProjectCommands } from "./commands/projects.js";
 import { GenerateCommands } from "./commands/generate.js";
 import { AssetsCommands } from "./commands/assets.js";
 import { Logger } from "winston";
+import { AuthCommands } from "./commands/auth";
 
 dotenv.config();
 
@@ -28,5 +29,6 @@ container.resolve(PipelineCommands).addCli(program);
 container.resolve(ProjectCommands).addCli(program);
 container.resolve(GenerateCommands).addCli(program);
 container.resolve(AssetsCommands).addCli(program);
+container.resolve(AuthCommands).addCli(program);
 
 program.parse();

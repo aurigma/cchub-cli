@@ -26,6 +26,11 @@ import { DesignsView } from "../views/designs";
 import { FontsView } from "../views/fonts";
 import { PrivateDesignsView } from "../views/private-designs";
 import { ProjectsCreateCommands } from "../commands/projects/create";
+import { TokenStore } from "../services/token-store";
+import { AuthCommands } from "../commands/auth";
+import { AuthView } from "../views/auth";
+import { OAuthLoopbackServer } from "../services/oauth-loopback-server";
+import { AuthorizationCodeAuth } from "../services/authorization-code-auth";
 
 import { JsonProductSerializer } from "@aurigma/design-atoms/Serialization";
 
@@ -82,6 +87,10 @@ function registerViews() {
     container.register(PrivateDesignsView,
         { useClass: PrivateDesignsView }
     );
+
+    container.register(AuthView,
+        { useClass: AuthView }
+    );
 }
 
 function registerCommands() {
@@ -120,6 +129,10 @@ function registerCommands() {
     container.register(ProjectsCreateCommands, {
         useClass: ProjectsCreateCommands
     });
+
+    container.register(AuthCommands, {
+        useClass: AuthCommands
+    });
 }
 
 function registerApiClientBuilders() {
@@ -153,6 +166,21 @@ function registerServices() {
 
     container.register(CCHubAuth,
         { useClass: CCHubAuth },
+        { lifecycle: Lifecycle.Singleton }
+    );
+
+    container.register(TokenStore,
+        { useClass: TokenStore },
+        { lifecycle: Lifecycle.Singleton }
+    );
+
+    container.register(OAuthLoopbackServer,
+        { useClass: OAuthLoopbackServer },
+        { lifecycle: Lifecycle.Singleton }
+    );
+
+    container.register(AuthorizationCodeAuth,
+        { useClass: AuthorizationCodeAuth },
         { lifecycle: Lifecycle.Singleton }
     );
 

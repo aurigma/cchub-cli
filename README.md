@@ -16,8 +16,13 @@ You need to create the .env file:
 
 ```sh
 CCHUB_BASEURL=https://customerscanvashub.com
-CCHUB_CLIENTID=xxxxxxxxxx # Client ID from the Settings > External Apps
-CCHUB_CLIENTSECRET=xxxxxxxxxxx # Client Secret from the Settings > External Apps
+CCHUB_AUTHORIZATION_CODE_CLIENTID=xxxxxxxxxx # Client ID for interactive Authorization Code flow
+CCHUB_AUTHORIZATION_CODE_SCOPE=Assets_read Private_assets_update # Resource scopes for interactive login; openid profile offline_access are added automatically
+CCHUB_AUTHORIZATION_CODE_CALLBACK_HOST=127.0.0.1 # Optional, loopback host for interactive login
+CCHUB_AUTHORIZATION_CODE_CALLBACK_PORT=53682 # Optional, fixed loopback port; omit to use a random free port
+CCHUB_AUTHORIZATION_CODE_CALLBACK_PATH=/oauth/callback # Optional, loopback callback path for interactive login
+CCHUB_CLIENT_CREDENTIALS_CLIENTID=xxxxxxxxxx # Client ID from the Settings > External Apps
+CCHUB_CLIENT_CREDENTIALS_CLIENTSECRET=xxxxxxxxxxx # Client Secret from the Settings > External Apps
 CCHUB_TENANTID=xxx  # Tenant ID from the Settings > Tenant
 CCHUB_TOKENREFRESTIMEBEFOREEXPIRATIONSEC=60
 APP_LOGLEVEL=info
@@ -51,6 +56,21 @@ or (for options of specific subcommands):
 
 ```bash
 npm start -- help <command> <subcommand> --help
+```
+
+For interactive browser-based login:
+
+```bash
+npm start -- auth login
+```
+
+If your identity provider requires an exact redirect URI, set a fixed callback port and register a URI like `http://127.0.0.1:53682/oauth/callback`.
+
+To inspect or clear the persisted session:
+
+```bash
+npm start -- auth status
+npm start -- auth logout
 ```
 
 ## Development

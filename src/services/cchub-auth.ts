@@ -2,6 +2,8 @@ import axios, { AxiosResponse } from "axios";
 import { CCHubConfiguration } from "./cchub-configuration";
 import { Logger } from "winston";
 import { jwtDecode } from "jwt-decode";
+import { StoredAuthSession, TokenStore } from "./token-store";
+import { AuthorizationCodeAuth } from "./authorization-code-auth";
 
 interface AuthClientGrantResponse {
     access_token: string,
@@ -35,19 +37,19 @@ import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export class CCHubAuth {
-    private token: string | null;
-    private expires_at: Date;
     private tenantId: string | null;
 
     constructor(
         @inject(CCHubConfiguration) private config: CCHubConfiguration,
+        @inject(AuthorizationCodeAuth) private readonly authorizationCodeAuth: AuthorizationCodeAuth,
+        @inject(TokenStore) private readonly tokenStore: TokenStore,
         @inject("Logger") private readonly logger: Logger
     ) {
         this.config = config;
-        this.token = null;
-        this.expires_at = new Date();
+        this.authorizationCodeAuth = authorizationCodeAuth;
         this.logger = logger;
         this.tenantId = null;
+        this.tokenStore = tokenStore;
         if (!logger) {
             throw new Error("Logger is required for CCHubAuth");
         }
@@ -62,28 +64,59 @@ export class CCHubAuth {
       * @returns An access token for a specific Client Credentials configured in Customer's Canvas.
       */
     public async getAccessToken(scope?: string): Promise<string> {
-        if (this.token == null || this.isTokenExpired()) {
-            this.logger.info("Recognized than a new access token is required.");
-            const { access_token, expires_in } = await this.requestAccessToken(scope);
-            this.token = access_token;
+        const session = await this.tokenStore.load();
 
-            const decodedToken = jwtDecode<DecodedToken>(access_token);
-            this.tenantId = decodedToken.TenantId;
-            this.expires_at = new Date(this.expires_at.setSeconds(expires_in));
+        if (session != null && !this.isTokenExpired(session)) {
+            this.ensureSupportedTokenType(session.tokenType);
+            this.updateTenantId(session.accessToken);
+            this.logger.debug("Using persisted access token. Expires at %s.", session.expiresAt);
 
-            this.logger.info("Updated token for tenant %s. Expires at %s (in %s seconds)", this.tenantId, this.expires_at, expires_in);
+            return session.accessToken;
         }
 
-        return this.token;
+        if (session?.grantType === "authorization_code") {
+            this.logger.info("Stored Authorization Code session is expired. Trying to refresh it.");
+            const refreshedSession = await this.authorizationCodeAuth.refreshAccessToken(session);
+            this.ensureSupportedTokenType(refreshedSession.tokenType);
+            await this.tokenStore.save(refreshedSession);
+            this.updateTenantId(refreshedSession.accessToken);
+
+            return refreshedSession.accessToken;
+        }
+
+        if (!this.config.hasClientCredentialsConfiguration()) {
+            throw new Error("No valid persisted session found and Client Credentials flow is not configured. Run auth login or configure Client Credentials.");
+        }
+
+        this.logger.info("Recognized than a new access token is required.");
+        const tokenResponse = await this.requestAccessToken(scope);
+        this.ensureSupportedTokenType(tokenResponse.token_type);
+
+        const expiresAt = new Date(Date.now() + tokenResponse.expires_in * 1000).toISOString();
+        const nextSession: StoredAuthSession = {
+            grantType: "client_credentials",
+            accessToken: tokenResponse.access_token,
+            expiresAt,
+            scope: tokenResponse.scope,
+            tokenType: tokenResponse.token_type
+        };
+
+        await this.tokenStore.save(nextSession);
+        this.updateTenantId(tokenResponse.access_token);
+
+        this.logger.info("Updated token for tenant %s. Expires at %s (in %s seconds)", this.tenantId, expiresAt, tokenResponse.expires_in);
+
+        return tokenResponse.access_token;
     }
 
     public getCurrentTenantId() {
         return this.tenantId;
     }
 
-    private isTokenExpired() {
+    private isTokenExpired(session: StoredAuthSession) {
         const now = new Date();
-        const millisecondsBeforeExpiration = this.expires_at.valueOf() - now.valueOf();
+        const expiresAt = new Date(session.expiresAt);
+        const millisecondsBeforeExpiration = expiresAt.valueOf() - now.valueOf();
         const isExpired = (millisecondsBeforeExpiration / 1000) < this.config.tokenRefreshTimeBeforeExpirationSec;
 
         this.logger.debug("Seconds before token expiration: %d %s", millisecondsBeforeExpiration / 1000, isExpired ? "(expired)" : "(valid)");
@@ -98,12 +131,11 @@ export class CCHubAuth {
      * @returns 
      */
     private async requestAccessToken(scope?: string): Promise<AuthClientGrantResponse> {
-        const authUrl = `${this.config.baseUrl}/connect/token`;
         scope = undefined;
 
         try {
             const response: AxiosResponse<AuthClientGrantResponse> = await axios.post(
-                authUrl,
+                this.config.tokenEndpointUrl,
                 this.buildClientCredentialsAuthRequestBody(scope),
                 {
                     headers: {
@@ -127,9 +159,13 @@ export class CCHubAuth {
      * @returns 
      */
     private buildClientCredentialsAuthRequestBody(scope?: string): AuthClientGrantBody {
+        if (!this.config.hasClientCredentialsConfiguration()) {
+            throw new Error("Client Credentials flow is not configured. Set CCHUB_CLIENT_CREDENTIALS_CLIENTID and CCHUB_CLIENT_CREDENTIALS_CLIENTSECRET.");
+        }
+
         const body: AuthClientGrantBody = {
-            client_id: this.config.clientId,
-            client_secret: this.config.clientSecret,
+            client_id: this.config.clientCredentialsClientId,
+            client_secret: this.config.clientCredentialsClientSecret,
             grant_type: "client_credentials"
         };
 
@@ -138,5 +174,18 @@ export class CCHubAuth {
         }
 
         return body;
+    }
+
+    private updateTenantId(accessToken: string) {
+        const decodedToken = jwtDecode<DecodedToken>(accessToken);
+        this.tenantId = decodedToken.TenantId;
+    }
+
+    private ensureSupportedTokenType(tokenType?: string) {
+        if (tokenType == null || tokenType.toLowerCase() === "bearer") {
+            return;
+        }
+
+        throw new Error(`Unsupported token type: ${tokenType}`);
     }
 }

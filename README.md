@@ -1,4 +1,4 @@
-# Hello World CLI Application
+# Customer's Canvas Hub CLI Application
 
 This is a simple command-line interface (CLI) application built with Node.js and TypeScript to work with Customer's Canvas Hub API. It demonstrates how to construct Customer's Canvas designs programmatically (through Design Atoms SDK) and submit it to the Customer's Canvas backend.
 

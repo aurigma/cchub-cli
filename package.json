@@ -1,7 +1,7 @@
 {
-  "name": "typescript-cli",
+  "name": "cchub-cli",
   "version": "1.0.0",
-  "description": "A simple Hello World CLI application built with TypeScript.",
+  "description": "Customer's Canvas Hub CLI client.",
   "main": "dist/cchub-cli.js",
   "type": "commonjs",
   "scripts": {
@@ -19,6 +19,7 @@
     "@aurigma/axios-design-atoms-api-client": "^2.71.8",
     "@aurigma/axios-storefront-api-client": "^2.62.12",
     "@aurigma/design-atoms": "^7.1.72",
+    "axios": "^1.13.5",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
     "commander": "^9.5.0",
@@ -36,7 +37,7 @@
     "typescript": "^4.9.5"
   },
   "bin": {
-    "typescript-cli": "dist/cchub-cli.js"
+    "cchub-cli": "dist/cchub-cli.js"
   },
   "files": [
     "dist",

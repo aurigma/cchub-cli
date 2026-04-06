@@ -75,7 +75,7 @@ export class OAuthLoopbackServer {
         });
 
         await new Promise<void>((resolve, reject) => {
-            server.listen(port ?? 0, host, () => {
+            server.listen(port ?? 0, () => {
                 resolve();
             });
             server.once("error", reject);

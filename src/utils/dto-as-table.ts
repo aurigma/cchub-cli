@@ -3,7 +3,7 @@ import { emptyState } from "./chalks";
 import Table from 'cli-table3';
 import { Logger } from "winston";
 
-export function dtoAsTable<T>(dtos: T[], head: string[], entityNamePlural: string, valueProcessorFunc?: Function): string {
+export function dtoAsTable<T extends object>(dtos: T[], head: Array<keyof T>, entityNamePlural: string, valueProcessorFunc?: Function): string {
     const logger: Logger = container.resolve("Logger");
     logger.debug("Entered dtoAsTable");
 
@@ -12,15 +12,15 @@ export function dtoAsTable<T>(dtos: T[], head: string[], entityNamePlural: strin
         return emptyState(`No ${entityNamePlural} match your request`);
     }
 
-    const table = new Table({ head });
+    const table = new Table({ head: head.map(String) });
     dtos.forEach(dto => {
-        const formatValue = (headTitle: string) => {
+        const formatValue = (headTitle: keyof T) => {
             const value = dto[headTitle];
-            if (value === null || value === undefined) return 'N/A';
+            if (value == null) return 'N/A';
             switch (headTitle) {
                 case "created":
                 case "lastModified":
-                    return new Date(value).toLocaleString();
+                    return new Date(value.toString()).toLocaleString();
                 default:
                     return valueProcessorFunc != null ? valueProcessorFunc(headTitle, value) : value;
             }

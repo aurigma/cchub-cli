@@ -5,8 +5,8 @@ import { DesignDto } from "@aurigma/axios-asset-storage-api-client";
 import { DesignAtomsServiceApiClient } from "@aurigma/axios-design-atoms-api-client";
 import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
 import { PrivateDesignListRow, PrivateDesignsView } from "../../views/private-designs";
-import { DesignAtomsApiClientBuilder } from "src/services/design-atoms-api-client-builder";
-import { AssetProcessorApiClientBuilder } from "src/services/asset-processor-api-client-builder";
+import { DesignAtomsApiClientBuilder } from "../../services/design-atoms-api-client-builder";
+import { AssetProcessorApiClientBuilder } from "../../services/asset-processor-api-client-builder";
 import { readFile } from "node:fs/promises";
 import { VdpDatasetCsvConverter } from "../../services/vdp-dataset-csv-converter";
 import { DatasetOutputFormat, VdpDataSet } from "../../types/vdp-dataset";
@@ -19,18 +19,18 @@ interface PrivateDesignListOptions {
 }
 
 interface PrivateDesignGetVariablesOptions {
-    designId?: string;
-    ownerId?: string;
+    designId: string;
+    ownerId: string;
 }
 
 interface PrivateDesignFromPublicOptions {
-    designId?: string;
-    ownerId?: string;
+    designId: string;
+    ownerId: string;
 }
 
 interface PrivateDesignGetDatasetOptions {
-    designId?: string;
-    ownerId?: string;
+    designId: string;
+    ownerId: string;
     output?: string;
 }
 

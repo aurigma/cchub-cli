@@ -1,9 +1,9 @@
-import { ProjectDto, ProjectOutputFileDetailsDto, ProjectProcessingResultsDto, ProjectProcessingStatus, StorefrontDto } from "@aurigma/axios-storefront-api-client";
+import { ProjectDto, ProjectOutputFileDetailsDto, ProjectProcessingResultsDto, ProjectProcessingStatus } from "@aurigma/axios-storefront-api-client";
 import { Logger } from "winston";
 import { injectable, inject } from "tsyringe";
 import { dtoAsTable } from "../utils/dto-as-table";
 import { formatByteSize } from "../utils/format-file-size";
-import { success, error, msg } from "src/utils/chalks";
+import { success, error, msg } from "../utils/chalks";
 import { DesignProblemDto } from "@aurigma/axios-asset-processor-api-client";
 import chalk from "chalk";
 
@@ -15,12 +15,12 @@ export class ProjectView {
         this.logger = logger;
     }
 
-    listAsTable(storefronts: StorefrontDto[]): string {
+    listAsTable(storefronts: ProjectDto[]): string {
         this.logger.debug("Entered ProjectView.listAsTable");
         return dtoAsTable(storefronts, ['id', 'name', 'storefrontId', 'orderNumber', 'created'], 'projects');
     }
 
-    listVariables(vdpFields: object[]) {
+    listVariables(vdpFields: Record<string, unknown>[]) {
         this.logger.debug("Entered ProjectView.listVariables");
         return dtoAsTable(vdpFields, Object.getOwnPropertyNames(vdpFields[0] ?? {}), "variables");
     }
@@ -39,17 +39,18 @@ export class ProjectView {
     }
 
     processingResults(result: ProjectProcessingResultsDto): string {
-        this.logger.debug(`Entered ProjectView.processingResults. status=${result?.status}.`);
+        this.logger.debug(`Entered ProjectView.processingResults. status=${result.status}.`);
 
-        let output = `Status: ${this.formatProcessingStatus(result?.status)}`;
-        if (result?.statusDescription && result?.status != result?.statusDescription) {
+        let output = `Status: ${this.formatProcessingStatus(result.status)}`;
+        if (result.statusDescription && result.status != result.statusDescription) {
             output += `\n${result.statusDescription}`;
         }
 
-        if (result?.status === ProjectProcessingStatus.Completed) {
+        if (result.status === ProjectProcessingStatus.Completed) {
             output += `\n${this.processingOutputFilesAsTable(result.outputFileDetails ?? [])}`;
 
-            const urls = result.outputFileDetails.filter(x => x.anonymousAccess).map(x => x.url);
+            const outputFiles = result.outputFileDetails ?? []; 
+            const urls = outputFiles.filter(x => x.anonymousAccess).map(x => x.url);
             if (urls.length > 0) {
                 output += "\nDownload URLs: \n- " + urls.join('\n- ');
             }
@@ -58,7 +59,7 @@ export class ProjectView {
         return output;
     }
 
-    private formatValue(value: any) {
+    private formatValue(value: any): string {
         switch(true) {
             case Array.isArray(value): 
                 return value.map(x => this.formatValue(x)).join("\n- ");
@@ -69,14 +70,16 @@ export class ProjectView {
         }
     }
 
-    private formatProcessingStatus(status: ProjectProcessingStatus) {
+    private formatProcessingStatus(status?: ProjectProcessingStatus) {
         switch (status) {
             case ProjectProcessingStatus.Completed:
                 return success(status);
             case ProjectProcessingStatus.Failed:
                 return error(status);
+            case null:
+                return error("Status not set.");
             default:
-                return msg(status);
+                return msg(status ?? "");
         }
     }
 

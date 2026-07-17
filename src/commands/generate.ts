@@ -74,7 +74,7 @@ export class GenerateCommands {
                 await this.designSaveService.saveAsPreview(helloWorldProduct, options.filename);
             } else {
                 this.logger.debug(`Target branch selected: cchub. filename=${options.filename}`);
-                const newDesignId = await this.designSaveService.saveToCCHub(helloWorldProduct, undefined, options.filename);
+                const newDesignId = await this.designSaveService.saveToCCHub(helloWorldProduct, options.filename);
                 console.log(newDesignId);
             }
 
@@ -96,7 +96,7 @@ export class GenerateCommands {
             const filename = `${options.filename ?? "VDP"} [${timestamp}]`;
             this.logger.debug(`Attempting to save a design as ${filename}`);
 
-            const newDesignId = await this.designSaveService.saveToCCHub(vdpDesign, options.ownerId, filename);
+            const newDesignId = await this.designSaveService.saveToCCHub(vdpDesign, filename, options.ownerId);
 
             this.logger.info(`Sample VDP design generation completed successfully.`);
 

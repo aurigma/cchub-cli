@@ -126,7 +126,7 @@ export class DesignGenerator {
         container.items.add(measureLine2);
     }
 
-    private async tryAddImage(container: Container, imageSource: string) {
+    private async tryAddImage(container: Container, imageSource?: string) {
         if (!imageSource) return;
 
         const imageItem = await this.createImageItem(imageSource);
@@ -156,7 +156,7 @@ export class DesignGenerator {
             mockup images or several print areas per surface, but to keep things
             simpler, let's put the Surface = PrintArea.
         */
-        const surface = new Surface(pageBoundsPoints.width, pageBoundsPoints.height, null, [printArea], null, "Front Side", true);
+        const surface = new Surface(pageBoundsPoints.width, pageBoundsPoints.height, undefined, [printArea], undefined, "Front Side", true);
         const product = new Product([surface]);
 
         return product;

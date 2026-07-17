@@ -48,7 +48,7 @@ export class DesignSaveService {
             );
             await saveFileResponseToDisk(resultFile, filename);
 
-        } catch (e) 
+        } catch (e: any) 
         { 
             this.logger.error(e.toString())
             throw e;
@@ -58,7 +58,7 @@ export class DesignSaveService {
         this.logger.info(`Preview file saved successfully to ${filename}`);
     }
 
-    public async saveToCCHub(product: Product, ownerId: string, filename: string) {
+    public async saveToCCHub(product: Product, filename: string, ownerId?: string) {
         this.logger.debug(`Entered DesignSaveService.saveToCCHub. filename=${filename}`);
         const designAtomsService = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
 

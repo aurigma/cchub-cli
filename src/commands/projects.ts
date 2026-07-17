@@ -80,7 +80,8 @@ export class ProjectCommands {
             .argument("[searchString]", "A search string used to filter out projects.", "")
             .action(async (searchString?: string, options?: ProjectSearchOptions) => {
                 this.logger.debug(`Entering "projects search" command. options=${JSON.stringify(options)}. Argument: ${searchString}`);
-                await this.listBySearchString(options, searchString || null);
+                if (options == null) throw new Error("StorefrontId and Period are not optional!");
+                await this.listBySearchString(options, searchString);
             });
 
         command
@@ -91,6 +92,7 @@ export class ProjectCommands {
             .argument("[searchString]", "A search string used to filter out projects.", "")
             .action(async (searchString?: string, options?: FindProjectsVDPOptions) => {
                 this.logger.debug(`Entering "projects search" command. options=${JSON.stringify(options)}. Argument: ${searchString}`);
+                if (options == null) throw new Error("StorefrontId and OrderIds are not optional!");
                 await this.findProjectsVDP(options);
             });
 
@@ -229,7 +231,8 @@ export class ProjectCommands {
         if (!project) {
             console.log(emptyState(`Project ${options.projectId} was not found for a tenant ${tenantId}`))
         }
-        const designIds = project.items.flatMap(x => x.designIds);
+        const projectLineItems = project.items ?? [];
+        const designIds = projectLineItems.flatMap(x => x.designIds);
         const ownerId = project.ownerId;
         this.logger.info(`Found project ${project.id} for tenant ${tenantId}. Owner ID is ${ownerId}. Designs are ${designIds.join(", ")}`)
 
@@ -244,6 +247,9 @@ export class ProjectCommands {
 
         for (const [index, design] of designIds.entries()) {
             this.logger.debug(`Trying to fetch design ${design}...`);
+            if (design == null) {
+                throw new Error("Design ID cannot be blank.");
+            }
             const file = await privateDesignClient.getFile(design, false, tenantId, ownerId);
             const filename = typeof options.outFile == 'string' ? makeSeqFileName(options.outFile, index) : design + ".st";
             try {

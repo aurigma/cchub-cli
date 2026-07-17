@@ -12,7 +12,7 @@ import {
 } from "@aurigma/axios-storefront-api-client";
 import { StorefrontApiClientBuilder } from "../../services/storefront-api-client-builder";
 import { ProjectView } from "../../views/project";
-import { AssetProcessorApiClientBuilder } from "src/services/asset-processor-api-client-builder";
+import { AssetProcessorApiClientBuilder } from "../../services/asset-processor-api-client-builder";
 import { DesignProblemDto } from "@aurigma/axios-asset-processor-api-client";
 
 interface ProjectCreateRenderHiresOptions {
@@ -125,7 +125,7 @@ export class ProjectsCreateCommands {
             const project = await projectsClient.createByRenderHiResScenario(storefrontId, null, createDto);
             console.log(this.view.createdProjectAsTable(project));
             this.logger.info(`Project created by render-hires. id=${project.id}, name=${project.name}, status=${project.status}, processingStatus=${project.processingStatus}.`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to create project through pipeline. ${error}. ${error?.response}`);
             process.exitCode = 1;
         }
@@ -178,7 +178,7 @@ export class ProjectsCreateCommands {
             const project = await projectsClient.createBySpecificPipelineScenario(storefrontId, null, createDto);
             console.log(this.view.createdProjectAsTable(project));
             this.logger.info(`Project created through a pipeline ${pipelineId}. id=${project.id}, name=${project.name}, status=${project.status}, processingStatus=${project.processingStatus}.`);
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to create project through pipeline. ${error}. ${error?.response}`);
             process.exitCode = 1;
         }
@@ -210,6 +210,9 @@ export class ProjectsCreateCommands {
             ownerId = "___system___"; // it can be any string that cannot be equal to a real user ID.
 
             const privateDesignCopy = await this.createPublicDesignCopy(designId, ownerId);
+            if (privateDesignCopy.id == null) 
+                throw new Error(`Private design copy for ${designId} has no id.`);
+            
             designId = privateDesignCopy.id;
         }
 

@@ -131,8 +131,6 @@ export class CCHubAuth {
      * @returns 
      */
     private async requestAccessToken(scope?: string): Promise<AuthClientGrantResponse> {
-        scope = undefined;
-
         try {
             const response: AxiosResponse<AuthClientGrantResponse> = await axios.post(
                 this.config.tokenEndpointUrl,

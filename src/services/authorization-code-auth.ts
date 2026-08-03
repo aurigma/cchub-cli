@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import { createHash, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { inject, injectable } from "tsyringe";
@@ -23,6 +23,13 @@ interface OAuthTokenRequestBody {
     redirect_uri?: string;
     refresh_token?: string;
     scope?: string;
+}
+
+export interface AuthorizationCodeFlowErrorDetails {
+    message: string;
+    serverError?: string;
+    serverErrorDescription?: string;
+    serverResponseBody?: string;
 }
 
 export interface PendingAuthorizationCodeLogin {
@@ -53,7 +60,7 @@ export class AuthorizationCodeAuth {
         }
 
         const state = this.generateRandomString(32, "base64url");
-        const codeVerifier = this.generateRandomString(48, "base64");
+        const codeVerifier = this.generateRandomString(48, "base64url");
         const codeChallenge = this.buildCodeChallenge(codeVerifier);
         const scope = this.config.authorizationCodeScope;
         const loopbackSession = await this.loopbackServer.createSession(
@@ -139,7 +146,7 @@ export class AuthorizationCodeAuth {
 
             return response.data;
         } catch (error) {
-            throw new Error(`Failed to complete Authorization Code flow. Server responded - ${error}`);
+            throw this.buildAuthorizationCodeFlowError(error);
         }
     }
 
@@ -176,11 +183,54 @@ export class AuthorizationCodeAuth {
     private buildCodeChallenge(codeVerifier: string): string {
         return createHash("sha256")
             .update(codeVerifier)
-            .digest("base64");
+            .digest("base64url");
     }
 
     private generateRandomString(size: number, encoding: BufferEncoding): string {
         return randomBytes(size).toString(encoding);
+    }
+
+    private buildAuthorizationCodeFlowError(error: unknown): Error {
+        const details = this.extractAuthorizationCodeFlowErrorDetails(error);
+        const parts = [details.message];
+
+        if (details.serverError != null) {
+            parts.push(`error=${details.serverError}`);
+        }
+        if (details.serverErrorDescription != null) {
+            parts.push(`error_description=${details.serverErrorDescription}`);
+        }
+        if (details.serverResponseBody != null) {
+            parts.push(`response=${details.serverResponseBody}`);
+        }
+
+        return new Error(parts.join(". "));
+    }
+
+    private extractAuthorizationCodeFlowErrorDetails(error: unknown): AuthorizationCodeFlowErrorDetails {
+        if (!axios.isAxiosError(error)) {
+            return {
+                message: `Failed to complete Authorization Code flow. Server responded - ${error}`
+            };
+        }
+
+        const axiosError = error as AxiosError<{
+            error?: string;
+            error_description?: string;
+        }>;
+        const responseBody = axiosError.response?.data;
+        const serverResponseBody = responseBody == null
+            ? undefined
+            : typeof responseBody === "string"
+                ? responseBody
+                : JSON.stringify(responseBody);
+
+        return {
+            message: `Failed to complete Authorization Code flow. Server responded - ${axiosError.message}`,
+            serverError: responseBody?.error,
+            serverErrorDescription: responseBody?.error_description,
+            serverResponseBody
+        };
     }
 
     private openBrowser(url: string): boolean {

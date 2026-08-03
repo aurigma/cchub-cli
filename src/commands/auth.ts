@@ -67,7 +67,8 @@ export class AuthCommands {
                 await pendingLogin.cancel();
             }
             this.logger.error("Failed to complete interactive authentication: %s", error);
-            this.authView.renderError("Failed to complete interactive authentication.");
+            const message = error instanceof Error ? error.message : "Failed to complete interactive authentication.";
+            this.authView.renderLoginError(message);
             process.exitCode = 1;
         }
     }

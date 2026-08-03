@@ -12,21 +12,53 @@ npm install
 
 ## Configuration
 
-You need to create the .env file:
+Create a `.env` file. There are two supported authentication modes, and you can configure either one or both.
+
+Common settings:
 
 ```sh
 CCHUB_BASEURL=https://customerscanvashub.com
-CCHUB_AUTHORIZATION_CODE_CLIENTID=xxxxxxxxxx # Client ID for interactive Authorization Code flow
-CCHUB_AUTHORIZATION_CODE_SCOPE=Assets_read Private_assets_update # Resource scopes for interactive login; openid profile offline_access are added automatically
-CCHUB_AUTHORIZATION_CODE_CALLBACK_HOST=127.0.0.1 # Optional, loopback host for interactive login
-CCHUB_AUTHORIZATION_CODE_CALLBACK_PORT=53682 # Optional, fixed loopback port; omit to use a random free port
-CCHUB_AUTHORIZATION_CODE_CALLBACK_PATH=/oauth/callback # Optional, loopback callback path for interactive login
-CCHUB_CLIENT_CREDENTIALS_CLIENTID=xxxxxxxxxx # Client ID from the Settings > External Apps
-CCHUB_CLIENT_CREDENTIALS_CLIENTSECRET=xxxxxxxxxxx # Client Secret from the Settings > External Apps
 CCHUB_TENANTID=xxx  # Tenant ID from the Settings > Tenant
 CCHUB_TOKENREFRESTIMEBEFOREEXPIRATIONSEC=60
 APP_LOGLEVEL=info
 ```
+
+### Option 1. Client Credentials
+
+Use this mode for non-interactive CLI usage when the app can authenticate directly with `client_id` and `client_secret`.
+
+```sh
+CCHUB_CLIENT_CREDENTIALS_CLIENTID=xxxxxxxxxx
+CCHUB_CLIENT_CREDENTIALS_CLIENTSECRET=xxxxxxxxxxx
+```
+
+### Option 2. Interactive Authorization Code Login
+
+Use this mode when you want to sign in through the browser and let the CLI keep a local session.
+
+```sh
+CCHUB_AUTHORIZATION_CODE_CLIENTID=xxxxxxxxxx
+CCHUB_AUTHORIZATION_CODE_SCOPE=Assets_full Private_assets_update Projects_full Storefronts_read Templates_full StorefrontUsers_full Tenants_read TenantUsers_read Artifacts_full RenderingJobs_full
+CCHUB_AUTHORIZATION_CODE_CALLBACK_HOST=127.0.0.1
+CCHUB_AUTHORIZATION_CODE_CALLBACK_PORT=53682
+CCHUB_AUTHORIZATION_CODE_CALLBACK_PATH=/oauth/callback
+```
+
+Notes:
+
+- `CCHUB_AUTHORIZATION_CODE_SCOPE` should contain only resource scopes required by Customer's Canvas Hub.
+- The CLI automatically adds `openid profile email offline_access` to the interactive login request.
+- See supported scope through the discovery endpoint <https://customerscanvashub.com/.well-known/openid-configuration> (see `scopes_supported`).
+- If your identity provider requires an exact redirect URI, use a fixed callback port and register a URI like `http://127.0.0.1:53682/oauth/callback`.
+- If `CCHUB_AUTHORIZATION_CODE_CALLBACK_PORT` is omitted, the CLI uses a random free port.
+
+### If Both Modes Are Configured
+
+The CLI uses authentication in this order:
+
+- If a persisted interactive session exists and is still valid, it is used.
+- If the interactive session exists but the access token is expired, the CLI tries to refresh it.
+- If there is no usable interactive session, the CLI falls back to Client Credentials if they are configured.
 
 ## Usage
 
@@ -63,8 +95,6 @@ For interactive browser-based login:
 ```bash
 npm start -- auth login
 ```
-
-If your identity provider requires an exact redirect URI, set a fixed callback port and register a URI like `http://127.0.0.1:53682/oauth/callback`.
 
 To inspect or clear the persisted session:
 

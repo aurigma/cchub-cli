@@ -24,8 +24,8 @@ export class PipelineCommands {
         command
             .command("list")
             .argument("[searchString]", "A search string used to filter out pipelines (by name - partial)")
-            .action((searchString: string) => {
-                this.list(searchString);
+            .action(async (searchString: string) => {
+                await this.list(searchString);
             });
 
         return command;

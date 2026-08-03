@@ -29,23 +29,17 @@ export class AuthCommands {
         command
             .command("login")
             .description("Starts interactive Authorization Code login with PKCE")
-            .action(() => {
-                this.handleLogin();
-            });
+            .action(() => this.handleLogin());
 
         command
             .command("status")
             .description("Shows the persisted authentication session status")
-            .action(() => {
-                this.handleStatus();
-            });
+            .action(() => this.handleStatus());
 
         command
             .command("logout")
             .description("Clears the persisted authentication session")
-            .action(() => {
-                this.handleLogout();
-            });
+            .action(() => this.handleLogout());
 
         return command;
     }
@@ -56,7 +50,7 @@ export class AuthCommands {
         try {
             this.logger.debug("Entered AuthCommands.handleLogin.");
             pendingLogin = await this.authorizationCodeAuth.prepareLogin();
-            const browserOpened = pendingLogin.openBrowser();
+            const browserOpened = await pendingLogin.openBrowser();
 
             this.authView.renderLoginStart(pendingLogin.authorizationUrl, browserOpened);
             const session = await pendingLogin.complete();

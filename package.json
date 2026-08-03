@@ -1,6 +1,6 @@
 {
   "name": "cchub-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Customer's Canvas Hub CLI client.",
   "main": "dist/cchub-cli.js",
   "type": "commonjs",

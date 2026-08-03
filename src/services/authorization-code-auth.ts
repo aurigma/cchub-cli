@@ -34,7 +34,7 @@ export interface AuthorizationCodeFlowErrorDetails {
 
 export interface PendingAuthorizationCodeLogin {
     authorizationUrl: string;
-    openBrowser(): boolean;
+    openBrowser(): Promise<boolean>;
     complete(): Promise<StoredAuthSession>;
     cancel(): Promise<void>;
 }
@@ -233,21 +233,38 @@ export class AuthorizationCodeAuth {
         };
     }
 
-    private openBrowser(url: string): boolean {
+    private async openBrowser(url: string): Promise<boolean> {
         try {
+            let command: string;
+            let args: string[];
+
             switch (process.platform) {
                 case "win32":
-                    spawn("rundll32.exe", ["url.dll,FileProtocolHandler", url], { detached: true, stdio: "ignore" }).unref();
+                    command = "rundll32.exe";
+                    args = ["url.dll,FileProtocolHandler", url];
                     break;
                 case "darwin":
-                    spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
+                    command = "open";
+                    args = [url];
                     break;
                 default:
-                    spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
+                    command = "xdg-open";
+                    args = [url];
                     break;
             }
 
-            return true;
+            const childProcess = spawn(command, args, { detached: true, stdio: "ignore" });
+
+            return await new Promise<boolean>((resolve) => {
+                childProcess.once("spawn", () => {
+                    childProcess.unref();
+                    resolve(true);
+                });
+                childProcess.once("error", (error) => {
+                    this.logger.warn("Failed to open browser automatically. %s", error);
+                    resolve(false);
+                });
+            });
         } catch (error) {
             this.logger.warn("Failed to open browser automatically. %s", error);
             return false;

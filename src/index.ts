@@ -10,25 +10,37 @@ import { GenerateCommands } from "./commands/generate.js";
 import { AssetsCommands } from "./commands/assets.js";
 import { Logger } from "winston";
 import { AuthCommands } from "./commands/auth";
+import packageMetadata from "../package.json";
 
-dotenv.config();
+async function main(): Promise<void> {
+    dotenv.config();
 
-registerDependencies();
+    registerDependencies();
 
-const logger: Logger = container.resolve("Logger");
+    const logger: Logger = container.resolve("Logger");
+    const program = new Command();
 
-const program = new Command();
+    program
+        .name(packageMetadata.name)
+        .description(packageMetadata.description)
+        .version(packageMetadata.version);
 
-program
-    .name('cchub-cli')
-    .description('CLI for interacting with Customer\'s Canvas Hub')
-    .version('1.0.0');
+    container.resolve(StorefrontCommands).addCli(program);
+    container.resolve(PipelineCommands).addCli(program);
+    container.resolve(ProjectCommands).addCli(program);
+    container.resolve(GenerateCommands).addCli(program);
+    container.resolve(AssetsCommands).addCli(program);
+    container.resolve(AuthCommands).addCli(program);
 
-container.resolve(StorefrontCommands).addCli(program);
-container.resolve(PipelineCommands).addCli(program);
-container.resolve(ProjectCommands).addCli(program);
-container.resolve(GenerateCommands).addCli(program);
-container.resolve(AssetsCommands).addCli(program);
-container.resolve(AuthCommands).addCli(program);
+    try {
+        await program.parseAsync();
+    } catch (error) {
+        logger.error("Failed to run CLI: %s", error);
+        process.exitCode = 1;
+    }
+}
 
-program.parse();
+void main().catch((error) => {
+    console.error("Failed to initialize CLI:", error);
+    process.exitCode = 1;
+});

@@ -67,9 +67,9 @@ export class ProjectCommands {
             .description('Download a design file from a specified project.')
             .requiredOption("-i, --projectId <number>", "A project ID where to extract a design.")
             .option("-o, --out-file <string>", "A location and file name to save it on a local machine. Omit it to use the design ID as a name.", false)
-            .action((options: ProjectGetDesignOptions) => {
+            .action(async (options: ProjectGetDesignOptions) => {
                 this.logger.debug(`Entering "projects get-design" command. options=${JSON.stringify(options)}.`);
-                this.getDesignFromProject(options);
+                await this.getDesignFromProject(options);
             })
 
         command

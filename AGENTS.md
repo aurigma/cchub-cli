@@ -62,6 +62,10 @@ Notes:
   - May depend on Commander and other third-party infrastructure libraries required to classify CLI failures.
   - MUST NOT depend on commands, use cases, services, or views.
 
+- `src/config/`
+  - Runtime configuration parsing and validation.
+  - Configuration may depend on generic utilities, but MUST NOT depend on commands, use cases, services, or views.
+
 - `src/commands/`
   - One file per top-level command (e.g., `pipelines.ts`).
   - Commands deeper than 2 levels must be split into subfolders by top-level command:
@@ -85,7 +89,10 @@ Notes:
   - Do not add repository interfaces or wrappers around every generated client without a concrete need.
 
 - `src/services/`
-  - Business logic and API integration lives here.
+  - Shared business logic and integration infrastructure lives here, grouped by responsibility:
+    - `api/`: generated Customer's Canvas API client builders and their shared base class.
+    - `auth/`: OAuth flows, access-token resolution, loopback callback handling, and token persistence.
+    - `designs/`, `projects/`, `vdp/`: shared feature-specific operations and transformations.
   - Services MUST NOT:
     - read from stdin
     - write to stdout/stderr (`console.*`)
@@ -102,15 +109,17 @@ Notes:
 
 ### Dependency Direction (strict)
 
-- `commands` -> may depend on `cli`, `use-cases`, `services`, `views`, `utils`.
+- `commands` -> may depend on `cli`, `config`, `use-cases`, `services`, `views`, `utils`.
 - `cli` -> may depend on third-party CLI/infrastructure libraries and `utils`.
+- `config` -> may depend on `utils`.
 - `use-cases` -> may depend on `services`, generated API clients, `types`, and `utils`.
 - `views` -> may depend on `utils`.
 - `services` -> may depend on `utils` (and other services if needed).
 - `use-cases` must not import from `commands` or `views`.
 - `cli` must not import from `commands`, `use-cases`, `services`, or `views`.
+- `config` must not import from `cli`, `commands`, `use-cases`, `services`, or `views`.
 - `services` must not import from `commands` or `views`.
-- `utils` must not import from `cli/commands/use-cases/services/views` (keep it generic).
+- `utils` must not import from `cli/config/commands/use-cases/services/views` (keep it generic).
 
 ## Dependency Injection (tsyringe)
 
@@ -180,7 +189,7 @@ When adding a new command:
 2) Implement multi-step workflows in `src/use-cases/<domain>/<scenario>.ts`
     - use a typed input object and structured result
     - keep API calls visible and avoid console I/O
-    - use `src/services/<domain>.ts` for shared integration infrastructure
+    - use `src/services/<domain>/` for shared feature operations and `src/services/api/` for generated-client infrastructure
 
 3) Implement output in `src/views/<domain>.ts`
     - format results for console (e.g., `cli-table3`, `chalk`)
@@ -193,7 +202,7 @@ When adding a new command:
 
 - Prefer loading environment variables during startup (before creating API clients).
 - If adding new env vars, document them in README and keep names consistent.
-- Keep config parsing/validation in one place (e.g., `src/utils/config.ts`) and inject config into services.
+- Keep config parsing/validation in `src/config/` and inject configuration into services.
 
 ## Testing
 

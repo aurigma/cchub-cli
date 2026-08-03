@@ -2,8 +2,8 @@ import { ApiClientConfiguration, DesignProcessorApiClient, PrivateDesignProcesso
 import { BaseCCHubApiClientBuilder, IApiClientConfiguration } from "./base-cchub-api-client-builder";
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
-import { CCHubAuth } from "./cchub-auth";
-import { CCHubConfiguration } from "./cchub-configuration";
+import { CCHubAuth } from "../auth/cchub-auth";
+import { CCHubConfiguration } from "../../config/cchub-configuration";
 
 @injectable()
 export class AssetProcessorApiClientBuilder extends BaseCCHubApiClientBuilder {

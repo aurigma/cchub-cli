@@ -2,7 +2,7 @@ import { inject, injectable } from 'tsyringe';
 import { Logger } from "winston";
 import { PipelineView } from '../views/pipeline';
 import { Command } from 'commander';
-import { BackOfficeApiClientBuilder } from '../services/backoffice-api-client-builder';
+import { BackOfficeApiClientBuilder } from '../services/api/backoffice-api-client-builder';
 
 @injectable()
 export class PipelineCommands {

@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
-import { DesignAtomsApiClientBuilder } from "./design-atoms-api-client-builder";
+import { DesignAtomsApiClientBuilder } from "../api/design-atoms-api-client-builder";
 import { BoundedTextItem, CmykColor, Container, FirstBaselineOffset, ImageItem, LineItem, Matrix, PlainTextItem, PointF, PrintArea, Product, RectangleF, RgbColor, RgbColors, SizeF, Surface, Transform } from "@aurigma/design-atoms-model";
 import { Margin } from "@aurigma/design-atoms-model/Math/Margin";
 import { JsonProductSerializer } from "@aurigma/design-atoms/Serialization";

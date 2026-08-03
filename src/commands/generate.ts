@@ -1,8 +1,8 @@
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { Command, Option } from "commander";
-import { DesignGenerator } from "../services/design-generator";
-import { DesignSaveService } from "../services/design-save-service";
+import { DesignGenerator } from "../services/designs/design-generator";
+import { DesignSaveService } from "../services/designs/design-save-service";
 import { parseNonEmptyString } from "../cli/option-parsers";
 
 const GENERATION_TARGETS = ["cchub", "local"] as const;

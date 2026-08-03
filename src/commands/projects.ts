@@ -8,13 +8,13 @@ import {
     ProjectProcessingStatus,
 } from '@aurigma/axios-storefront-api-client';
 import { emptyState } from '../utils/chalks';
-import { StorefrontApiClientBuilder } from '../services/storefront-api-client-builder';
-import { AssetStorageApiClientBuilder } from '../services/asset-storage-api-client-builder';
+import { StorefrontApiClientBuilder } from '../services/api/storefront-api-client-builder';
+import { AssetStorageApiClientBuilder } from '../services/api/asset-storage-api-client-builder';
 import { saveFileResponseToDisk } from '../utils/save-file-response';
 import { ProjectsCreateCommands } from './projects/create';
 
 import { VdpDataModel } from "@aurigma/axios-design-atoms-api-client";
-import { DesignAtomsApiClientBuilder } from '../services/design-atoms-api-client-builder';
+import { DesignAtomsApiClientBuilder } from '../services/api/design-atoms-api-client-builder';
 import { parseCommaSeparatedList, parseNonEmptyString, parsePositiveInteger } from '../cli/option-parsers';
 
 interface ProjectSearchOptions {

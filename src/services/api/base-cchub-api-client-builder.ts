@@ -1,5 +1,5 @@
-import { CCHubAuth } from "./cchub-auth";
-import { CCHubConfiguration } from "./cchub-configuration";
+import { CCHubAuth } from "../auth/cchub-auth";
+import { CCHubConfiguration } from "../../config/cchub-configuration";
 import { Logger } from "winston";
 
 

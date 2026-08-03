@@ -3,12 +3,12 @@ import { Logger } from "winston";
 import { Command, Option } from "commander";
 import { DesignDto } from "@aurigma/axios-asset-storage-api-client";
 import { DesignAtomsServiceApiClient } from "@aurigma/axios-design-atoms-api-client";
-import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
+import { AssetStorageApiClientBuilder } from "../../services/api/asset-storage-api-client-builder";
 import { PrivateDesignListRow, PrivateDesignsView } from "../../views/private-designs";
-import { DesignAtomsApiClientBuilder } from "../../services/design-atoms-api-client-builder";
-import { AssetProcessorApiClientBuilder } from "../../services/asset-processor-api-client-builder";
+import { DesignAtomsApiClientBuilder } from "../../services/api/design-atoms-api-client-builder";
+import { AssetProcessorApiClientBuilder } from "../../services/api/asset-processor-api-client-builder";
 import { readFile } from "node:fs/promises";
-import { VdpDatasetCsvConverter } from "../../services/vdp-dataset-csv-converter";
+import { VdpDatasetCsvConverter } from "../../services/vdp/vdp-dataset-csv-converter";
 import { DatasetOutputFormat, VdpDataSet } from "../../types/vdp-dataset";
 import { parseNonEmptyString, parseNonNegativeInteger, parsePositiveInteger } from "../../cli/option-parsers";
 

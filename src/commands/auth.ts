@@ -2,9 +2,9 @@ import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { Command } from "commander";
 import { AuthView } from "../views/auth";
-import { TokenStore } from "../services/token-store";
-import { CCHubConfiguration } from "../services/cchub-configuration";
-import { AuthorizationCodeAuth } from "../services/authorization-code-auth";
+import { TokenStore } from "../services/auth/token-store";
+import { CCHubConfiguration } from "../config/cchub-configuration";
+import { AuthorizationCodeAuth } from "../services/auth/authorization-code-auth";
 
 @injectable()
 export class AuthCommands {

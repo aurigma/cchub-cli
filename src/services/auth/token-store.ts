@@ -2,7 +2,7 @@ import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { getAppDataDir } from "../utils/app-data-dir";
+import { getAppDataDir } from "../../utils/app-data-dir";
 
 export type AuthGrantType = "client_credentials" | "authorization_code";
 

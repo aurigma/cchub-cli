@@ -1,7 +1,7 @@
 import { injectable } from "tsyringe";
 import { VariableInfo, VdpDataModel } from "@aurigma/axios-design-atoms-api-client";
-import { parseCsvToObjects } from "../utils/csv";
-import { VdpDataSet, VdpDatasetRow, VdpSurfaceData } from "../types/vdp-dataset";
+import { parseCsvToObjects } from "../../utils/csv";
+import { VdpDataSet, VdpDatasetRow, VdpSurfaceData } from "../../types/vdp-dataset";
 
 type CsvRow = Record<string, string>;
 type VdpRow = VdpDatasetRow;

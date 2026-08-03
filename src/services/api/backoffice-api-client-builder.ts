@@ -1,8 +1,8 @@
 import { BackOfficeApiClient } from "@aurigma/axios-backoffice-api-client";
 import { BaseCCHubApiClientBuilder, IApiClientConfiguration } from "./base-cchub-api-client-builder";
 import { inject, injectable } from "tsyringe";
-import { CCHubAuth } from "./cchub-auth";
-import { CCHubConfiguration } from "./cchub-configuration";
+import { CCHubAuth } from "../auth/cchub-auth";
+import { CCHubConfiguration } from "../../config/cchub-configuration";
 import { Logger } from "winston";
 
 @injectable()

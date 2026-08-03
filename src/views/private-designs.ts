@@ -4,7 +4,7 @@ import { dtoAsTable } from "../utils/dto-as-table";
 import { formatByteSize } from "../utils/format-file-size";
 import { VariableInfo } from "@aurigma/axios-design-atoms-api-client";
 import { emptyState, success } from "../utils/chalks";
-import { VdpDatasetCsvConverter } from "../services/vdp-dataset-csv-converter";
+import { VdpDatasetCsvConverter } from "../services/vdp/vdp-dataset-csv-converter";
 import { DatasetOutputFormat, VdpDataSet } from "../types/vdp-dataset";
 
 export interface PrivateDesignListRow {

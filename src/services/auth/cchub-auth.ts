@@ -1,10 +1,10 @@
 import axios, { AxiosResponse } from "axios";
-import { CCHubConfiguration } from "./cchub-configuration";
+import { CCHubConfiguration } from "../../config/cchub-configuration";
 import { Logger } from "winston";
 import { jwtDecode } from "jwt-decode";
 import { StoredAuthSession, TokenStore } from "./token-store";
 import { AuthorizationCodeAuth } from "./authorization-code-auth";
-import { AuthenticationError } from "../utils/errors";
+import { AuthenticationError } from "../../utils/errors";
 
 interface AuthClientGrantResponse {
     access_token: string,

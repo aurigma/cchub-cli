@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { DesignProblemDto } from "@aurigma/axios-asset-processor-api-client";
-import { AssetProcessorApiClientBuilder } from "./asset-processor-api-client-builder";
+import { AssetProcessorApiClientBuilder } from "../api/asset-processor-api-client-builder";
 
 export interface ProjectCreationDesignPreparationInput {
     designId: string;

@@ -2,10 +2,10 @@ import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { Command, Option } from "commander";
 import { DesignDto } from "@aurigma/axios-asset-storage-api-client";
-import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
+import { AssetStorageApiClientBuilder } from "../../services/api/asset-storage-api-client-builder";
 import { DesignListRow, DesignsView } from "../../views/designs";
 import { AssetSortField, ASSET_SORT_FIELDS } from "../assets";
-import { DesignDataSchemaService } from "../../services/design-data-schema-service";
+import { DesignDataSchemaService } from "../../services/designs/design-data-schema-service";
 import { parseNonEmptyString, parseNonNegativeInteger, parsePositiveInteger } from "../../cli/option-parsers";
 import { CliPartialSuccessError, CliUsageError } from "../../cli/errors";
 

@@ -3,10 +3,10 @@ import { createHash, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
-import { CCHubConfiguration } from "./cchub-configuration";
+import { CCHubConfiguration } from "../../config/cchub-configuration";
 import { OAuthLoopbackServer } from "./oauth-loopback-server";
 import { StoredAuthSession } from "./token-store";
-import { AuthenticationError } from "../utils/errors";
+import { AuthenticationError } from "../../utils/errors";
 
 interface OAuthTokenResponse {
     access_token: string;

@@ -5,8 +5,8 @@ import {
     OrderDetailsDto,
     ProjectDto
 } from "@aurigma/axios-storefront-api-client";
-import { ProjectCreationDesignPreparationService } from "../../services/project-creation-design-preparation";
-import { StorefrontApiClientBuilder } from "../../services/storefront-api-client-builder";
+import { ProjectCreationDesignPreparationService } from "../../services/projects/project-creation-design-preparation";
+import { StorefrontApiClientBuilder } from "../../services/api/storefront-api-client-builder";
 
 export interface CreateProjectThroughPipelineInput {
     storefrontId: number;

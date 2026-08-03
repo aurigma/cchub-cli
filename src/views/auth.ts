@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
-import { StoredAuthSession } from "../services/token-store";
+import { StoredAuthSession } from "../services/auth/token-store";
 
 @injectable()
 export class AuthView {

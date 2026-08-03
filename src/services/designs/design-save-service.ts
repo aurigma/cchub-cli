@@ -1,8 +1,8 @@
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
-import { DesignAtomsApiClientBuilder } from "./design-atoms-api-client-builder";
-import { NotImplementedError } from "../utils/errors";
-import { saveFileResponseToDisk } from "../utils/save-file-response";
+import { DesignAtomsApiClientBuilder } from "../api/design-atoms-api-client-builder";
+import { NotImplementedError } from "../../utils/errors";
+import { saveFileResponseToDisk } from "../../utils/save-file-response";
 
 import { JsonProductSerializer } from "@aurigma/design-atoms/Serialization";
 import { Product } from "@aurigma/design-atoms-model";

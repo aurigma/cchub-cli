@@ -2,7 +2,7 @@ import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { Command, Option } from "commander";
 import { DataSchemaDto } from "@aurigma/axios-asset-storage-api-client";
-import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
+import { AssetStorageApiClientBuilder } from "../../services/api/asset-storage-api-client-builder";
 import { DataSchemaListRow, DataSchemasView } from "../../views/data-schemas";
 import { AssetSortField, ASSET_SORT_FIELDS } from "../assets";
 import { parseNonNegativeInteger, parsePositiveInteger } from "../../cli/option-parsers";

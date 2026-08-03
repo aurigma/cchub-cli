@@ -34,6 +34,9 @@ import { AuthCommands } from "../commands/auth";
 import { AuthView } from "../views/auth";
 import { OAuthLoopbackServer } from "../services/oauth-loopback-server";
 import { AuthorizationCodeAuth } from "../services/authorization-code-auth";
+import { CreateProjectThroughPipelineUseCase } from "../use-cases/projects/create-project-through-pipeline";
+import { CreateProjectByRenderHiResUseCase } from "../use-cases/projects/create-project-by-render-hires";
+import { ProjectCreationDesignPreparationService } from "../services/project-creation-design-preparation";
 
 import { JsonProductSerializer } from "@aurigma/design-atoms/Serialization";
 
@@ -194,6 +197,18 @@ function registerServices() {
         { useClass: AuthorizationCodeAuth },
         { lifecycle: Lifecycle.Singleton }
     );
+
+    container.register(CreateProjectThroughPipelineUseCase, {
+        useClass: CreateProjectThroughPipelineUseCase
+    });
+
+    container.register(CreateProjectByRenderHiResUseCase, {
+        useClass: CreateProjectByRenderHiResUseCase
+    });
+
+    container.register(ProjectCreationDesignPreparationService, {
+        useClass: ProjectCreationDesignPreparationService
+    });
 
     container.registerInstance(JsonProductSerializer, new JsonProductSerializer())
 

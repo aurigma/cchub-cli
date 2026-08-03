@@ -72,7 +72,14 @@ Notes:
   - The action handler implementation must be in a separate private function/method.
   - TypeScript annotations do not convert Commander option values at runtime. Use shared parsers for numbers and non-empty values, and use `Option.choices()` for enums.
   - Keep filesystem and business validation in handlers, use cases, or services rather than Commander option parsers.
-  - Commands orchestrate: parse inputs → call services → render via views → set exit code.
+  - Commands orchestrate: parse inputs -> call use cases or services -> render via views -> set exit code.
+
+- `src/use-cases/`
+  - Multi-step Customer's Canvas workflows that are useful as standalone, copyable examples.
+  - Use cases accept typed input objects and return typed results.
+  - Keep generated Customer's Canvas API client calls visible when that improves the example.
+  - Use cases MUST NOT depend on Commander, views, `console.*`, or `process.exitCode`.
+  - Do not add repository interfaces or wrappers around every generated client without a concrete need.
 
 - `src/services/`
   - Business logic and API integration lives here.
@@ -92,11 +99,13 @@ Notes:
 
 ### Dependency Direction (strict)
 
-- `commands` → may depend on `services`, `views`, `utils`.
-- `views` → may depend on `utils`.
-- `services` → may depend on `utils` (and other services if needed).
+- `commands` -> may depend on `use-cases`, `services`, `views`, `utils`.
+- `use-cases` -> may depend on `services`, generated API clients, `types`, and `utils`.
+- `views` -> may depend on `utils`.
+- `services` -> may depend on `utils` (and other services if needed).
+- `use-cases` must not import from `commands` or `views`.
 - `services` must not import from `commands` or `views`.
-- `utils` must not import from `commands/services/views` (keep it generic).
+- `utils` must not import from `commands/use-cases/services/views` (keep it generic).
 
 ## Dependency Injection (tsyringe)
 
@@ -105,6 +114,7 @@ Notes:
 - Keep registration organized:
   - views in `registerViews()`
   - commands in `registerCommands()`
+  - use cases and services in `registerServices()`
 - Prefer constructor injection in services/views/commands.
 - Do not instantiate services/views manually in command handlers unless explicitly requested.
 
@@ -160,16 +170,17 @@ When adding a new command:
         - call views to render output
         - handle errors + set exit codes (see above)
 
-2) Implement business logic in `src/services/<domain>.ts`
-    - no console I/O
-    - return structured results (objects/arrays) suitable for views
+2) Implement multi-step workflows in `src/use-cases/<domain>/<scenario>.ts`
+    - use a typed input object and structured result
+    - keep API calls visible and avoid console I/O
+    - use `src/services/<domain>.ts` for shared integration infrastructure
 
 3) Implement output in `src/views/<domain>.ts`
     - format results for console (e.g., `cli-table3`, `chalk`)
     - keep formatting separate from data retrieval
     - Prefer `src/utils/dto-as-table.ts` to format arrays of items, see `src/views/pipeline.ts` as an example.
 
-4) Register command + view in `src/di/container.ts`
+4) Register command + view + use case in `src/di/container.ts`
 
 ## Environment / Configuration
 

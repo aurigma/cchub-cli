@@ -27,32 +27,26 @@ export class DesignSaveService {
         const designAtomsService = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
         const serializedProduct = this.serializeProduct(product);
 
-        try {
-            const resultFile = await designAtomsService.renderProduct(
-                null,
-                this.designAtomsApi.getCurrentTenantId(),
-                {
-                    product: serializedProduct,
-                    renderingConfig: {
-                        format: ProductProofFormat.Jpeg,
-                        width: 800,
-                        height: 800,
-                        interpolationMode: ProductProofInterpolationMode.High,
-                        surfaceIndex: 0,
-                        safetyLinesEnabled: false,
-                        watermarkEnabled: false,
-                        watermarkOpacity: 0,
-                        watermarkRepeat: false
-                    }
+        const resultFile = await designAtomsService.renderProduct(
+            null,
+            this.designAtomsApi.getCurrentTenantId(),
+            {
+                product: serializedProduct,
+                renderingConfig: {
+                    format: ProductProofFormat.Jpeg,
+                    width: 800,
+                    height: 800,
+                    interpolationMode: ProductProofInterpolationMode.High,
+                    surfaceIndex: 0,
+                    safetyLinesEnabled: false,
+                    watermarkEnabled: false,
+                    watermarkOpacity: 0,
+                    watermarkRepeat: false
                 }
-            );
-            await saveFileResponseToDisk(resultFile, filename);
+            }
+        );
+        await saveFileResponseToDisk(resultFile, filename);
 
-        } catch (e: any) 
-        { 
-            this.logger.error(e.toString())
-            throw e;
-        }
         this.logger.info(`Rendered a product.`);
 
         this.logger.info(`Preview file saved successfully to ${filename}`);

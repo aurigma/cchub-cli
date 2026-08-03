@@ -11,6 +11,7 @@ import { AssetsCommands } from "./commands/assets.js";
 import { Logger } from "winston";
 import { AuthCommands } from "./commands/auth";
 import packageMetadata from "../package.json";
+import { handleCliError } from "./cli/error-handler";
 
 async function main(): Promise<void> {
     dotenv.config();
@@ -19,6 +20,7 @@ async function main(): Promise<void> {
 
     const logger: Logger = container.resolve("Logger");
     const program = new Command();
+    program.exitOverride();
 
     program
         .name(packageMetadata.name)
@@ -35,8 +37,7 @@ async function main(): Promise<void> {
     try {
         await program.parseAsync();
     } catch (error) {
-        logger.error("Failed to run CLI: %s", error);
-        process.exitCode = 1;
+        handleCliError(error, logger);
     }
 }
 

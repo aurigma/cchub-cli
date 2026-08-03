@@ -9,9 +9,10 @@ import {
     RenderHiResScenarioOutputRotateMode
 } from "@aurigma/axios-storefront-api-client";
 import { ProjectView } from "../../views/project";
-import { parseNonEmptyString, parsePositiveInteger } from "../shared/option-parsers";
+import { parseNonEmptyString, parsePositiveInteger } from "../../cli/option-parsers";
 import { CreateProjectThroughPipelineUseCase } from "../../use-cases/projects/create-project-through-pipeline";
 import { CreateProjectByRenderHiResUseCase } from "../../use-cases/projects/create-project-by-render-hires";
+import { CliOperationError } from "../../cli/errors";
 
 interface ProjectCreateRenderHiresOptions {
     storefrontId: number;
@@ -102,53 +103,41 @@ export class ProjectsCreateCommands {
     private async createByRenderHiresScenario(options: ProjectCreateRenderHiresOptions) {
         this.logger.debug(`Entered ProjectsCreateCommands.createByRenderHiresScenario. options=${JSON.stringify(options)}.`);
 
-        try {
-            const result = await this.createProjectByRenderHiRes.execute({
-                ...options,
-                name: new Date().toISOString(),
-                description: "Created through cchub-cli tool (render-hires)",
-                orderDetails: this.generateRandomOrderDetails()
-            });
+        const result = await this.createProjectByRenderHiRes.execute({
+            ...options,
+            name: new Date().toISOString(),
+            description: "Created through cchub-cli tool (render-hires)",
+            orderDetails: this.generateRandomOrderDetails()
+        });
 
-            if (result.status === "design-problems") {
-                this.logger.warn(`Design ${result.designId} for ${result.ownerId} contains some issues`);
-                console.log(this.view.visualizeDesignProblems(result.problems));
-                process.exitCode = 2;
-                return;
-            }
-
-            console.log(this.view.createdProjectAsTable(result.project));
-            this.logger.info(`Project created by render-hires. id=${result.project.id}, name=${result.project.name}, status=${result.project.status}, processingStatus=${result.project.processingStatus}.`);
-        } catch (error: any) {
-            this.logger.error(`Failed to create project by render-hires. ${error}. ${error?.response}`);
-            process.exitCode = 1;
+        if (result.status === "design-problems") {
+            this.logger.warn(`Design ${result.designId} for ${result.ownerId} contains some issues`);
+            console.log(this.view.visualizeDesignProblems(result.problems));
+            throw new CliOperationError("Project was not created because the design contains problems.");
         }
+
+        console.log(this.view.createdProjectAsTable(result.project));
+        this.logger.info(`Project created by render-hires. id=${result.project.id}, name=${result.project.name}, status=${result.project.status}, processingStatus=${result.project.processingStatus}.`);
     }
 
     private async createByPipelineScenario(options: ProjectCreatePipelineOptions) {
         this.logger.debug(`Entered ProjectsCreateCommands.createByPipelineScenario. options=${JSON.stringify(options)}.`);
 
-        try {
-            const result = await this.createProjectThroughPipeline.execute({
-                ...options,
-                name: new Date().toISOString(),
-                description: "Created through cchub-cli tool (through-pipeline)",
-                orderDetails: this.generateRandomOrderDetails()
-            });
+        const result = await this.createProjectThroughPipeline.execute({
+            ...options,
+            name: new Date().toISOString(),
+            description: "Created through cchub-cli tool (through-pipeline)",
+            orderDetails: this.generateRandomOrderDetails()
+        });
 
-            if (result.status === "design-problems") {
-                this.logger.warn(`Design ${result.designId} for ${result.ownerId} contains some issues`);
-                console.log(this.view.visualizeDesignProblems(result.problems));
-                process.exitCode = 2;
-                return;
-            }
-
-            console.log(this.view.createdProjectAsTable(result.project));
-            this.logger.info(`Project created through a pipeline ${options.pipelineId}. id=${result.project.id}, name=${result.project.name}, status=${result.project.status}, processingStatus=${result.project.processingStatus}.`);
-        } catch (error: any) {
-            this.logger.error(`Failed to create project through pipeline. ${error}. ${error?.response}`);
-            process.exitCode = 1;
+        if (result.status === "design-problems") {
+            this.logger.warn(`Design ${result.designId} for ${result.ownerId} contains some issues`);
+            console.log(this.view.visualizeDesignProblems(result.problems));
+            throw new CliOperationError("Project was not created because the design contains problems.");
         }
+
+        console.log(this.view.createdProjectAsTable(result.project));
+        this.logger.info(`Project created through a pipeline ${options.pipelineId}. id=${result.project.id}, name=${result.project.name}, status=${result.project.status}, processingStatus=${result.project.processingStatus}.`);
     }
 
     private generateRandomOrderDetails(): OrderDetailsDto {

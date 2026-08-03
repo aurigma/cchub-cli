@@ -4,6 +4,7 @@ import { Logger } from "winston";
 import { jwtDecode } from "jwt-decode";
 import { StoredAuthSession, TokenStore } from "./token-store";
 import { AuthorizationCodeAuth } from "./authorization-code-auth";
+import { AuthenticationError } from "../utils/errors";
 
 interface AuthClientGrantResponse {
     access_token: string,
@@ -85,7 +86,7 @@ export class CCHubAuth {
         }
 
         if (!this.config.hasClientCredentialsConfiguration()) {
-            throw new Error("No valid persisted session found and Client Credentials flow is not configured. Run auth login or configure Client Credentials.");
+            throw new AuthenticationError("No valid persisted session found and Client Credentials flow is not configured. Run auth login or configure Client Credentials.");
         }
 
         this.logger.info("Recognized than a new access token is required.");
@@ -145,7 +146,7 @@ export class CCHubAuth {
             return response.data;
 
         } catch (e) {
-            throw new Error(`Failed to authenticate. Server responded - ${e}`);
+            throw new AuthenticationError(`Failed to authenticate. Server responded - ${e}`, e);
         }
 
     }
@@ -158,7 +159,7 @@ export class CCHubAuth {
      */
     private buildClientCredentialsAuthRequestBody(scope?: string): AuthClientGrantBody {
         if (!this.config.hasClientCredentialsConfiguration()) {
-            throw new Error("Client Credentials flow is not configured. Set CCHUB_CLIENT_CREDENTIALS_CLIENTID and CCHUB_CLIENT_CREDENTIALS_CLIENTSECRET.");
+            throw new AuthenticationError("Client Credentials flow is not configured. Set CCHUB_CLIENT_CREDENTIALS_CLIENTID and CCHUB_CLIENT_CREDENTIALS_CLIENTSECRET.");
         }
 
         const body: AuthClientGrantBody = {
@@ -184,6 +185,6 @@ export class CCHubAuth {
             return;
         }
 
-        throw new Error(`Unsupported token type: ${tokenType}`);
+        throw new AuthenticationError(`Unsupported token type: ${tokenType}`);
     }
 }

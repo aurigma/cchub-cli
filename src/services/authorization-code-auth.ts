@@ -6,6 +6,7 @@ import { Logger } from "winston";
 import { CCHubConfiguration } from "./cchub-configuration";
 import { OAuthLoopbackServer } from "./oauth-loopback-server";
 import { StoredAuthSession } from "./token-store";
+import { AuthenticationError } from "../utils/errors";
 
 interface OAuthTokenResponse {
     access_token: string;
@@ -53,10 +54,10 @@ export class AuthorizationCodeAuth {
 
     public async prepareLogin(): Promise<PendingAuthorizationCodeLogin> {
         if (!this.config.hasAuthorizationCodeConfiguration()) {
-            throw new Error("Authorization Code flow is not configured. Set CCHUB_AUTHORIZATION_CODE_CLIENTID.");
+            throw new AuthenticationError("Authorization Code flow is not configured. Set CCHUB_AUTHORIZATION_CODE_CLIENTID.");
         }
         if (this.config.authorizationCodeScope.trim().length === 0) {
-            throw new Error("Authorization Code flow requires CCHUB_AUTHORIZATION_CODE_SCOPE.");
+            throw new AuthenticationError("Authorization Code flow requires CCHUB_AUTHORIZATION_CODE_SCOPE.");
         }
 
         const state = this.generateRandomString(32, "base64url");
@@ -108,7 +109,7 @@ export class AuthorizationCodeAuth {
 
     public async refreshAccessToken(session: StoredAuthSession): Promise<StoredAuthSession> {
         if (session.refreshToken == null || session.refreshToken.trim().length === 0) {
-            throw new Error("Stored Authorization Code session does not contain a refresh token. Run auth login again.");
+            throw new AuthenticationError("Stored Authorization Code session does not contain a refresh token. Run auth login again.");
         }
 
         const response = await this.requestToken({
@@ -204,7 +205,7 @@ export class AuthorizationCodeAuth {
             parts.push(`response=${details.serverResponseBody}`);
         }
 
-        return new Error(parts.join(". "));
+        return new AuthenticationError(parts.join(". "), error);
     }
 
     private extractAuthorizationCodeFlowErrorDetails(error: unknown): AuthorizationCodeFlowErrorDetails {

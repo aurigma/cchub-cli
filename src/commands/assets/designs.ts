@@ -6,7 +6,8 @@ import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-c
 import { DesignListRow, DesignsView } from "../../views/designs";
 import { AssetSortField, ASSET_SORT_FIELDS } from "../assets";
 import { DesignDataSchemaService } from "../../services/design-data-schema-service";
-import { parseNonEmptyString, parseNonNegativeInteger, parsePositiveInteger } from "../shared/option-parsers";
+import { parseNonEmptyString, parseNonNegativeInteger, parsePositiveInteger } from "../../cli/option-parsers";
+import { CliPartialSuccessError, CliUsageError } from "../../cli/errors";
 
 interface LinkDataSchemaOptions {
     designId: string;
@@ -77,72 +78,59 @@ export class AssetsDesignsCommands {
         const schemaId = options.schemaId.trim();
 
         if (!designId || !schemaId) {
-            this.logger.error("Both designId and schemaId are required.");
-            console.error(this.designsView.invalidDataSchemaLinkArguments());
-            process.exitCode = 2;
+            throw new CliUsageError(this.designsView.invalidDataSchemaLinkArguments());
+        }
+
+        const design = await this.designDataSchemaService.link(designId, schemaId);
+        this.logger.info(`Data schema linked successfully. designId=${designId}, schemaId=${schemaId}, hasProblems=${design.hasProblems}.`);
+
+        if (design.hasProblems !== true) {
+            console.log(this.designsView.dataSchemaLinked(designId, schemaId));
             return;
         }
 
         try {
-            const design = await this.designDataSchemaService.link(designId, schemaId);
-            this.logger.info(`Data schema linked successfully. designId=${designId}, schemaId=${schemaId}, hasProblems=${design.hasProblems}.`);
-
-            if (design.hasProblems !== true) {
-                console.log(this.designsView.dataSchemaLinked(designId, schemaId));
-                return;
-            }
-
-            try {
-                const problems = await this.designDataSchemaService.check(designId);
-                console.log(this.designsView.dataSchemaLinkedWithProblems(designId, schemaId, problems));
-            } catch (error) {
-                this.logger.error(`Data schema was linked, but design problems could not be retrieved. designId=${designId}, schemaId=${schemaId}. Error: ${error}`);
-                console.error(this.designsView.dataSchemaLinkedButCheckFailed(designId, schemaId));
-                process.exitCode = 1;
-            }
+            const problems = await this.designDataSchemaService.check(designId);
+            console.log(this.designsView.dataSchemaLinkedWithProblems(designId, schemaId, problems));
         } catch (error) {
-            this.logger.error(`Failed to link data schema. designId=${designId}, schemaId=${schemaId}. Error: ${error}`);
-            console.error(this.designsView.dataSchemaLinkFailed(designId, schemaId));
-            process.exitCode = 1;
+            throw new CliPartialSuccessError(
+                this.designsView.dataSchemaLinkedButCheckFailed(designId, schemaId),
+                error
+            );
         }
     }
 
     private async listDesigns(options: DesignListOptions): Promise<void> {
         this.logger.debug(`Entered AssetsDesignsCommands.listDesigns. options=${JSON.stringify(options)}.`);
 
-        try {
-            const { skip, take, path, search, hasProblems } = options;
-            const sorting = `${options.sort ?? "lastModified"} DESC`;
+        const { skip, take, path, search, hasProblems } = options;
+        const sorting = `${options.sort ?? "lastModified"} DESC`;
 
-            const client = await this.assetStorageApi.buildDesignApiClient();
-            const tenantId = this.assetStorageApi.getCurrentTenantId();
+        const client = await this.assetStorageApi.buildDesignApiClient();
+        const tenantId = this.assetStorageApi.getCurrentTenantId();
 
-            const result = await client.getAll(
-                null, // dataSchemaId
-                null, // toggleSetId
-                null, // paletteId
-                null, // paletteUID
-                null, // fontPostScriptName
-                path,
-                true, // includeSubfolders
-                skip,
-                take,
-                sorting,
-                search,
-                null, // customFields
-                tenantId
-            );
+        const result = await client.getAll(
+            null, // dataSchemaId
+            null, // toggleSetId
+            null, // paletteId
+            null, // paletteUID
+            null, // fontPostScriptName
+            path,
+            true, // includeSubfolders
+            skip,
+            take,
+            sorting,
+            search,
+            null, // customFields
+            tenantId
+        );
 
-            const items = result.items ?? [];
-            const rows = items
-                .map(x => this.mapDesignToRow(x))
-                .filter(x => !hasProblems || x.hasProblems)
-            console.log(this.designsView.listAsTable(rows));
-            this.logger.info(`Found ${result.total ?? items.length} designs for tenant ${tenantId}. skip=${skip}, take=${take}, path=${path}, sort=${sorting}.`);
-        } catch (error) {
-            this.logger.error(`Failed to list designs. Error: ${error}`);
-            process.exitCode = 1;
-        }
+        const items = result.items ?? [];
+        const rows = items
+            .map(x => this.mapDesignToRow(x))
+            .filter(x => !hasProblems || x.hasProblems)
+        console.log(this.designsView.listAsTable(rows));
+        this.logger.info(`Found ${result.total ?? items.length} designs for tenant ${tenantId}. skip=${skip}, take=${take}, path=${path}, sort=${sorting}.`);
     }
 
     private mapDesignToRow(dto: DesignDto): DesignListRow {

@@ -15,7 +15,7 @@ import { ProjectsCreateCommands } from './projects/create';
 
 import { VdpDataModel } from "@aurigma/axios-design-atoms-api-client";
 import { DesignAtomsApiClientBuilder } from '../services/design-atoms-api-client-builder';
-import { parseCommaSeparatedList, parseNonEmptyString, parsePositiveInteger } from './shared/option-parsers';
+import { parseCommaSeparatedList, parseNonEmptyString, parsePositiveInteger } from '../cli/option-parsers';
 
 interface ProjectSearchOptions {
     storefrontId: number;
@@ -117,22 +117,16 @@ export class ProjectCommands {
     private async getProjectProcessingStatus(options: ProjectProcessingStatusOptions): Promise<void> {
         this.logger.debug(`Entered ProjectCommands.getProjectProcessingStatus. options=${JSON.stringify(options)}.`);
 
-        try {
-            const projectsClient = await this.storefrontApi.buildProjectsApiClient();
-            const result = await projectsClient.getProjectProcessingResults(options.projectId, null, null);
+        const projectsClient = await this.storefrontApi.buildProjectsApiClient();
+        const result = await projectsClient.getProjectProcessingResults(options.projectId, null, null);
 
-            console.log(this.view.processingResults(result));
+        console.log(this.view.processingResults(result));
 
-            if (result?.status === ProjectProcessingStatus.Completed) {
-                const details = result.outputFileDetails ?? [];
-                if (options.download) {
-                    await this.downloadOutputArtifacts(details);
-                }
+        if (result?.status === ProjectProcessingStatus.Completed) {
+            const details = result.outputFileDetails ?? [];
+            if (options.download) {
+                await this.downloadOutputArtifacts(details);
             }
-
-        } catch (error) {
-            this.logger.error(`Failed to get project processing status. Error: ${error}`);
-            process.exitCode = 1;
         }
     }
 

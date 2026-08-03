@@ -10,7 +10,7 @@ import { AssetProcessorApiClientBuilder } from "../../services/asset-processor-a
 import { readFile } from "node:fs/promises";
 import { VdpDatasetCsvConverter } from "../../services/vdp-dataset-csv-converter";
 import { DatasetOutputFormat, VdpDataSet } from "../../types/vdp-dataset";
-import { parseNonEmptyString, parseNonNegativeInteger, parsePositiveInteger } from "../shared/option-parsers";
+import { parseNonEmptyString, parseNonNegativeInteger, parsePositiveInteger } from "../../cli/option-parsers";
 
 interface PrivateDesignListOptions {
     skip: number;
@@ -149,46 +149,36 @@ export class AssetsPrivateDesignsCommands {
     private async getDataset(options: PrivateDesignGetDatasetOptions): Promise<void> {
         this.logger.debug(`Entered AssetsPrivateDesignsCommands.getDataset. options=${JSON.stringify(options)}.`);
 
-        try {
-            const client = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
-            const result = await this.tryLoadVdpData(client, options.designId, options.ownerId);
-            const dataset = (result?.vdpDataSet ?? null) as VdpDataSet | null;
+        const client = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
+        const result = await this.tryLoadVdpData(client, options.designId, options.ownerId);
+        const dataset = (result?.vdpDataSet ?? null) as VdpDataSet | null;
 
-            console.log(this.privateDesignsView.dataset(dataset, options.output));
-        } catch (error) {
-            this.logger.error(`Failed to get dataset. Error: ${error}`);
-            process.exitCode = 1;
-        }
+        console.log(this.privateDesignsView.dataset(dataset, options.output));
     }
 
     private async updateDataset(options: PrivateDesignUpdateDatasetOptions): Promise<void> {
         this.logger.debug(`Entered AssetsPrivateDesignsCommands.updateDataset. options=${JSON.stringify(options)}.`);
 
-        try {
-            const designId = options.designId;
-            const ownerId = options.ownerId;
-            const datasetPath = options.dataset;
-            const csv = await readFile(datasetPath, "utf-8");
-            const client = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
-            const variables = await client.getVariables(designId, ownerId);
-            const currentVdpData = options.append
-                ? await this.tryLoadVdpData(client, designId, ownerId)
-                : null;
-            const payload = this.vdpDatasetCsvConverter.csvToVdpData(
-                csv,
-                variables.items ?? [],
-                currentVdpData
-            );
+        const designId = options.designId;
+        const ownerId = options.ownerId;
+        const datasetPath = options.dataset;
+        const csv = await readFile(datasetPath, "utf-8");
+        const client = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
+        const variables = await client.getVariables(designId, ownerId);
+        const currentVdpData = options.append
+            ? await this.tryLoadVdpData(client, designId, ownerId)
+            : null;
+        const payload = this.vdpDatasetCsvConverter.csvToVdpData(
+            csv,
+            variables.items ?? [],
+            currentVdpData
+        );
 
-            await client.saveVdpData(designId, ownerId, undefined, {
-                ...payload
-            });
+        await client.saveVdpData(designId, ownerId, undefined, {
+            ...payload
+        });
 
-            console.log(this.privateDesignsView.datasetUpdated());
-        } catch (error) {
-            this.logger.error(`Failed to update dataset. Error: ${error}`);
-            process.exitCode = 1;
-        }
+        console.log(this.privateDesignsView.datasetUpdated());
     }
 
     private async tryLoadVdpData(client: DesignAtomsServiceApiClient, designId: string, ownerId: string) {
@@ -214,43 +204,38 @@ export class AssetsPrivateDesignsCommands {
     private async listPrivateDesigns(options: PrivateDesignListOptions): Promise<void> {
         this.logger.debug(`Entered AssetsPrivateDesignsCommands.listPrivateDesigns. options=${JSON.stringify(options)}.`);
 
-        try {
-            const { skip, take, search, ownerId } = options;
+        const { skip, take, search, ownerId } = options;
 
-            const client = await this.assetStorageApi.buildPrivateDesignApiClient();
-            const tenantId = this.assetStorageApi.getCurrentTenantId();
-            this.logger.debug(`Prepared PrivateDesignsApiClient. tenantId=${tenantId}, skip=${skip}, take=${take}, ownerId=${ownerId}.`);
+        const client = await this.assetStorageApi.buildPrivateDesignApiClient();
+        const tenantId = this.assetStorageApi.getCurrentTenantId();
+        this.logger.debug(`Prepared PrivateDesignsApiClient. tenantId=${tenantId}, skip=${skip}, take=${take}, ownerId=${ownerId}.`);
 
-            const result = await client.getAll(
-                null, // retentionPolicy
-                null, // dataSchemaId
-                null, // toggleSetId
-                null, // paletteId
-                null, // paletteUID
-                null, // fontPostScriptName
-                "/", // path
-                true, // includeSubfolders
-                skip,
-                take,
-                "lastModified DESC",
-                search,
-                null, // customFields
-                tenantId,
-                ownerId
-            );
+        const result = await client.getAll(
+            null, // retentionPolicy
+            null, // dataSchemaId
+            null, // toggleSetId
+            null, // paletteId
+            null, // paletteUID
+            null, // fontPostScriptName
+            "/", // path
+            true, // includeSubfolders
+            skip,
+            take,
+            "lastModified DESC",
+            search,
+            null, // customFields
+            tenantId,
+            ownerId
+        );
 
-            const items = result.items ?? [];
-            const total = result.total ?? items.length;
-            const rows = items.map(x => this.mapPrivateDesignToRow(x));
+        const items = result.items ?? [];
+        const total = result.total ?? items.length;
+        const rows = items.map(x => this.mapPrivateDesignToRow(x));
 
-            console.log(this.privateDesignsView.listAsTable(rows));
-            console.log(`returned ${skip}-${skip + items.length} of ${total}`);
+        console.log(this.privateDesignsView.listAsTable(rows));
+        console.log(`returned ${skip}-${skip + items.length} of ${total}`);
 
-            this.logger.info(`Listed private designs. total=${total}, returned=${items.length}, skip=${skip}, take=${take}, ownerId=${ownerId}.`);
-        } catch (error) {
-            this.logger.error(`Failed to list private designs. Error: ${error}`);
-            process.exitCode = 1;
-        }
+        this.logger.info(`Listed private designs. total=${total}, returned=${items.length}, skip=${skip}, take=${take}, ownerId=${ownerId}.`);
     }
 
     private mapPrivateDesignToRow(dto: DesignDto): PrivateDesignListRow {

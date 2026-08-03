@@ -57,10 +57,13 @@ Notes:
   - Contains only app bootstrap and top-level command registration.
   - Do NOT add business logic here.
 
+- `src/cli/`
+  - Shared CLI infrastructure such as Commander option parsers, CLI error types, exit codes, and top-level error handling.
+  - May depend on Commander and other third-party infrastructure libraries required to classify CLI failures.
+  - MUST NOT depend on commands, use cases, services, or views.
+
 - `src/commands/`
   - One file per top-level command (e.g., `pipelines.ts`).
-  - `src/commands/shared/` contains reusable Commander-specific option parsers and helpers. These files do not register commands and do not expose `addCli()`.
-  - Shared command helpers may depend on Commander, but must not depend on services or views.
   - Commands deeper than 2 levels must be split into subfolders by top-level command:
     - Example: `assets fonts list` -> `src/commands/assets/fonts.ts`
     - Example: `projects create render-hires` -> `src/commands/projects/create.ts`
@@ -99,13 +102,15 @@ Notes:
 
 ### Dependency Direction (strict)
 
-- `commands` -> may depend on `use-cases`, `services`, `views`, `utils`.
+- `commands` -> may depend on `cli`, `use-cases`, `services`, `views`, `utils`.
+- `cli` -> may depend on third-party CLI/infrastructure libraries and `utils`.
 - `use-cases` -> may depend on `services`, generated API clients, `types`, and `utils`.
 - `views` -> may depend on `utils`.
 - `services` -> may depend on `utils` (and other services if needed).
 - `use-cases` must not import from `commands` or `views`.
+- `cli` must not import from `commands`, `use-cases`, `services`, or `views`.
 - `services` must not import from `commands` or `views`.
-- `utils` must not import from `commands/use-cases/services/views` (keep it generic).
+- `utils` must not import from `cli/commands/use-cases/services/views` (keep it generic).
 
 ## Dependency Injection (tsyringe)
 
@@ -129,16 +134,16 @@ Notes:
 
 ### Principle
 
-- Commands MUST catch errors at the command action boundary.
-- On failure:
-  - log the error via `winston` at **error** level (`logger.error(...)`)
-  - print a short user-facing message if appropriate (prefer via view or `console.error`)
-  - set an appropriate `process.exitCode` (do not call `process.exit()` unless explicitly required)
+- Command actions MUST return or await their asynchronous handlers so failures reach `program.parseAsync()`.
+- Standard command failures are handled once by `src/cli/error-handler.ts` around `program.parseAsync()` in `main()`.
+- Commands MUST NOT add a catch block solely to log an error and set `process.exitCode`.
+- Keep a local catch only for cleanup, recovery, partial success, or intentional best-effort processing. Rethrow when the error remains fatal.
+- The top-level error handler logs diagnostics, prints a short user-facing message, and sets `process.exitCode`. Do not call `process.exit()` unless explicitly required.
 
 ### Recommended Exit Codes
 
 - 0  : success
-- 1  : unexpected/unhandled error
+- 1  : operation failed / unexpected or unhandled error
 - 2  : invalid usage / bad arguments (commander validation or manual validation)
 - 3  : authentication/authorization error (e.g., missing/invalid token)
 - 4  : network error / cannot reach API
@@ -146,16 +151,17 @@ Notes:
 
 Use the closest match. Keep this mapping stable across commands.
 
-### Error Types (optional but recommended)
+### Error Types
 
-Prefer using small typed errors in `src/utils/errors.ts` (or similar) to map to exit codes consistently:
+CLI-specific errors and exit-code mapping live in `src/cli/errors.ts`:
 
 - `CliUsageError`
 - `CliAuthError`
 - `CliNetworkError`
 - `CliApiError` (include status/code if available)
+- `CliOperationError` / `CliPartialSuccessError`
 
-Commands should translate thrown errors to an exit code consistently.
+Commands may throw `CliUsageError` for command-specific input validation. Use cases and services MUST NOT depend on CLI error types; their failures are normalized by the top-level handler.
 
 ## Command Implementation Guidelines
 
@@ -168,7 +174,8 @@ When adding a new command:
         - validate inputs
         - call services
         - call views to render output
-        - handle errors + set exit codes (see above)
+        - return or await all asynchronous work
+        - let fatal errors propagate to the top-level handler
 
 2) Implement multi-step workflows in `src/use-cases/<domain>/<scenario>.ts`
     - use a typed input object and structured result
@@ -193,4 +200,4 @@ When adding a new command:
 - There are currently no tests.
 - Do not introduce a test framework unless explicitly requested.
 - Prefer writing services and utilities in a testable way (pure functions, typed inputs/outputs).
-- If tests are introduced later, prioritize unit testing `services/` and `utils/`.
+- If tests are introduced later, prioritize unit testing `cli/`, `services/`, and `utils/`.

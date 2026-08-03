@@ -7,7 +7,8 @@ import { FontDto } from "@aurigma/axios-asset-storage-api-client";
 import { AssetProcessorApiClientBuilder } from "../../services/asset-processor-api-client-builder";
 import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
 import { FontListRow, FontsView } from "../../views/fonts";
-import { parseNonEmptyString } from "../shared/option-parsers";
+import { parseNonEmptyString } from "../../cli/option-parsers";
+import { CliUsageError } from "../../cli/errors";
 
 @injectable()
 export class AssetsFontsCommands {
@@ -51,87 +52,75 @@ export class AssetsFontsCommands {
     private async importFont(fontFile: string): Promise<void> {
         this.logger.debug(`Entered AssetsFontsCommands.importFont. fontFile=${fontFile}.`);
 
-        try {
-            const resolvedFontFile = resolve(fontFile);
-            this.logger.debug(`Resolved font path: ${resolvedFontFile}.`);
+        const resolvedFontFile = resolve(fontFile);
+        this.logger.debug(`Resolved font path: ${resolvedFontFile}.`);
 
-            if (!existsSync(resolvedFontFile)) {
-                this.logger.debug("Branch: font file does not exist.");
-                this.logger.error(`Font file does not exist: ${resolvedFontFile}`);
-                process.exitCode = 2;
-                return;
-            }
-            this.logger.debug("Branch: font file exists.");
-
-            const client = await this.assetProcessorApi.buildFontProcessorApiClient();
-            const tenantId = this.assetProcessorApi.getCurrentTenantId();
-            this.logger.debug(`Prepared FontProcessorApiClient. tenantId=${tenantId}.`);
-            const fontName = basename(resolvedFontFile);
-            const fontFileData = readFileSync(resolvedFontFile);
-            const sourceFile = {
-                data: new Blob([fontFileData]),
-                fileName: fontName
-            };
-            this.logger.debug(`Prepared source file payload for import. fileName=${fontName}.`);
-
-            const dto = await client.importFont(
-                tenantId,
-                fontName,
-                "/",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                sourceFile
-            );
-            this.logger.debug(`Import completed. dto.id=${dto.id}.`);
-
-            this.logger.info(`Font imported successfully. id=${dto.id}, postscriptName=${dto.metadata?.postscriptName}`);
-        } catch (error) {
-            this.logger.error(`Failed to import font from "${fontFile}". Error: ${error}`);
-            process.exitCode = 1;
+        if (!existsSync(resolvedFontFile)) {
+            this.logger.debug("Branch: font file does not exist.");
+            throw new CliUsageError(`Font file does not exist: ${resolvedFontFile}`);
         }
+        this.logger.debug("Branch: font file exists.");
+
+        const client = await this.assetProcessorApi.buildFontProcessorApiClient();
+        const tenantId = this.assetProcessorApi.getCurrentTenantId();
+        this.logger.debug(`Prepared FontProcessorApiClient. tenantId=${tenantId}.`);
+        const fontName = basename(resolvedFontFile);
+        const fontFileData = readFileSync(resolvedFontFile);
+        const sourceFile = {
+            data: new Blob([fontFileData]),
+            fileName: fontName
+        };
+        this.logger.debug(`Prepared source file payload for import. fileName=${fontName}.`);
+
+        const dto = await client.importFont(
+            tenantId,
+            fontName,
+            "/",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            sourceFile
+        );
+        this.logger.debug(`Import completed. dto.id=${dto.id}.`);
+
+        this.logger.info(`Font imported successfully. id=${dto.id}, postscriptName=${dto.metadata?.postscriptName}`);
     }
 
     private async listFonts(): Promise<void> {
         this.logger.debug("Entered AssetsFontsCommands.listFonts.");
 
-        try {
-            const client = await this.assetStorageApi.buildFontsApiClient();
-            const tenantId = this.assetStorageApi.getCurrentTenantId();
-            this.logger.debug(`Prepared FontsApiClient. tenantId=${tenantId}.`);
+        const client = await this.assetStorageApi.buildFontsApiClient();
+        const tenantId = this.assetStorageApi.getCurrentTenantId();
+        this.logger.debug(`Prepared FontsApiClient. tenantId=${tenantId}.`);
 
-            const result = await client.getAll(
-                null, // postscriptNames
-                "/", // path
-                true, // includeSubfolders
-                null, // skip
-                null, // take
-                "lastModified DESC", // sorting
-                null, // search
-                null, // customFields
-                tenantId
-            );
+        const result = await client.getAll(
+            null, // postscriptNames
+            "/", // path
+            true, // includeSubfolders
+            null, // skip
+            null, // take
+            "lastModified DESC", // sorting
+            null, // search
+            null, // customFields
+            tenantId
+        );
 
-            const items = result.items ?? [];
-            this.logger.debug(`Fonts query completed. total=${result.total ?? 0}, items=${items.length}.`);
-            const rows = items.map(x => this.mapFontToRow(x));
-            console.log(this.fontsView.listAsTable(rows));
-            this.logger.info(`Found ${result.total ?? items.length} fonts for tenant ${tenantId}.`);
-        } catch (error) {
-            this.logger.error(`Failed to list fonts. Error: ${error}`);
-            process.exitCode = 1;
-        }
+        const items = result.items ?? [];
+        this.logger.debug(`Fonts query completed. total=${result.total ?? 0}, items=${items.length}.`);
+        const rows = items.map(x => this.mapFontToRow(x));
+        console.log(this.fontsView.listAsTable(rows));
+        this.logger.info(`Found ${result.total ?? items.length} fonts for tenant ${tenantId}.`);
     }
 
     private mapFontToRow(dto: FontDto): FontListRow {

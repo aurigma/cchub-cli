@@ -60,41 +60,26 @@ export class AuthCommands {
             if (pendingLogin != null) {
                 await pendingLogin.cancel();
             }
-            this.logger.error("Failed to complete interactive authentication: %s", error);
-            const message = error instanceof Error ? error.message : "Failed to complete interactive authentication.";
-            this.authView.renderLoginError(message);
-            process.exitCode = 1;
+            throw error;
         }
     }
 
     private async handleStatus() {
-        try {
-            this.logger.debug("Entered AuthCommands.handleStatus.");
-            const session = await this.tokenStore.load();
+        this.logger.debug("Entered AuthCommands.handleStatus.");
+        const session = await this.tokenStore.load();
 
-            this.authView.renderStatus(
-                session,
-                this.tokenStore.getAuthFilePath(),
-                this.config.tokenRefreshTimeBeforeExpirationSec
-            );
-        } catch (error) {
-            this.logger.error("Failed to get authentication status: %s", error);
-            this.authView.renderError("Failed to get authentication status.");
-            process.exitCode = 1;
-        }
+        this.authView.renderStatus(
+            session,
+            this.tokenStore.getAuthFilePath(),
+            this.config.tokenRefreshTimeBeforeExpirationSec
+        );
     }
 
     private async handleLogout() {
-        try {
-            this.logger.debug("Entered AuthCommands.handleLogout.");
-            const authFilePath = this.tokenStore.getAuthFilePath();
+        this.logger.debug("Entered AuthCommands.handleLogout.");
+        const authFilePath = this.tokenStore.getAuthFilePath();
 
-            await this.tokenStore.clear();
-            this.authView.renderLogout(authFilePath);
-        } catch (error) {
-            this.logger.error("Failed to clear authentication session: %s", error);
-            this.authView.renderError("Failed to clear authentication session.");
-            process.exitCode = 1;
-        }
+        await this.tokenStore.clear();
+        this.authView.renderLogout(authFilePath);
     }
 }

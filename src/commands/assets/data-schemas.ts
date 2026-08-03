@@ -5,7 +5,7 @@ import { DataSchemaDto } from "@aurigma/axios-asset-storage-api-client";
 import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
 import { DataSchemaListRow, DataSchemasView } from "../../views/data-schemas";
 import { AssetSortField, ASSET_SORT_FIELDS } from "../assets";
-import { parseNonNegativeInteger, parsePositiveInteger } from "../shared/option-parsers";
+import { parseNonNegativeInteger, parsePositiveInteger } from "../../cli/option-parsers";
 
 interface DataSchemaListOptions {
     skip: number;
@@ -53,30 +53,25 @@ export class AssetsDataSchemasCommands {
     }
 
     private async listDataSchemas(options: DataSchemaListOptions): Promise<void> {
-        try {
-            const { skip, take, path, search } = options;
-            const sorting = `${options.sort ?? "lastModified"} DESC`;
-            const client = await this.assetStorageApi.buildDataSchemasApiClient();
-            const tenantId = this.assetStorageApi.getCurrentTenantId();
+        const { skip, take, path, search } = options;
+        const sorting = `${options.sort ?? "lastModified"} DESC`;
+        const client = await this.assetStorageApi.buildDataSchemasApiClient();
+        const tenantId = this.assetStorageApi.getCurrentTenantId();
 
-            const result = await client.getAll(
-                path,
-                true,
-                skip,
-                take,
-                sorting,
-                search,
-                null,
-                tenantId
-            );
+        const result = await client.getAll(
+            path,
+            true,
+            skip,
+            take,
+            sorting,
+            search,
+            null,
+            tenantId
+        );
 
-            const items = result.items ?? [];
-            console.log(this.dataSchemasView.listAsTable(items.map(x => this.mapDataSchemaToRow(x))));
-            this.logger.info(`Found ${result.total ?? items.length} data schemas for tenant ${tenantId}. skip=${skip}, take=${take}, path=${path}, sort=${sorting}.`);
-        } catch (error) {
-            this.logger.error(`Failed to list data schemas. Error: ${error}`);
-            process.exitCode = 1;
-        }
+        const items = result.items ?? [];
+        console.log(this.dataSchemasView.listAsTable(items.map(x => this.mapDataSchemaToRow(x))));
+        this.logger.info(`Found ${result.total ?? items.length} data schemas for tenant ${tenantId}. skip=${skip}, take=${take}, path=${path}, sort=${sorting}.`);
     }
 
     private mapDataSchemaToRow(dto: DataSchemaDto): DataSchemaListRow {

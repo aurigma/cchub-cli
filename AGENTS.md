@@ -59,6 +59,8 @@ Notes:
 
 - `src/commands/`
   - One file per top-level command (e.g., `pipelines.ts`).
+  - `src/commands/shared/` contains reusable Commander-specific option parsers and helpers. These files do not register commands and do not expose `addCli()`.
+  - Shared command helpers may depend on Commander, but must not depend on services or views.
   - Commands deeper than 2 levels must be split into subfolders by top-level command:
     - Example: `assets fonts list` -> `src/commands/assets/fonts.ts`
     - Example: `projects create render-hires` -> `src/commands/projects/create.ts`
@@ -68,6 +70,8 @@ Notes:
     - registers CLI interface (args/options/subcommands)
     - wires an action handler
   - The action handler implementation must be in a separate private function/method.
+  - TypeScript annotations do not convert Commander option values at runtime. Use shared parsers for numbers and non-empty values, and use `Option.choices()` for enums.
+  - Keep filesystem and business validation in handlers, use cases, or services rather than Commander option parsers.
   - Commands orchestrate: parse inputs → call services → render via views → set exit code.
 
 - `src/services/`

@@ -5,6 +5,7 @@ import { DataSchemaDto } from "@aurigma/axios-asset-storage-api-client";
 import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
 import { DataSchemaListRow, DataSchemasView } from "../../views/data-schemas";
 import { AssetSortField, ASSET_SORT_FIELDS } from "../assets";
+import { parseNonNegativeInteger, parsePositiveInteger } from "../shared/option-parsers";
 
 interface DataSchemaListOptions {
     skip: number;
@@ -34,8 +35,8 @@ export class AssetsDataSchemasCommands {
         command
             .command("list")
             .description("Lists data schemas from asset storage")
-            .option("-s, --skip <number>", "How many items to skip", "0")
-            .option("-t, --take <number>", "How many items to take", "25")
+            .option("-s, --skip <number>", "How many items to skip", parseNonNegativeInteger, 0)
+            .option("-t, --take <number>", "How many items to take", parsePositiveInteger, 25)
             .option("-p, --path <string>", "Folder path filter", "/")
             .option("-q, --search <string>", "Search string")
             .addOption(

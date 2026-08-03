@@ -6,6 +6,7 @@ import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-c
 import { DesignListRow, DesignsView } from "../../views/designs";
 import { AssetSortField, ASSET_SORT_FIELDS } from "../assets";
 import { DesignDataSchemaService } from "../../services/design-data-schema-service";
+import { parseNonEmptyString, parseNonNegativeInteger, parsePositiveInteger } from "../shared/option-parsers";
 
 interface LinkDataSchemaOptions {
     designId: string;
@@ -43,8 +44,8 @@ export class AssetsDesignsCommands {
         command
             .command("list")
             .description("Lists designs from asset storage")
-            .option("-s, --skip <number>", "How many items to skip", "0")
-            .option("-t, --take <number>", "How many items to take", "25")
+            .option("-s, --skip <number>", "How many items to skip", parseNonNegativeInteger, 0)
+            .option("-t, --take <number>", "How many items to take", parsePositiveInteger, 25)
             .option("-p, --path <string>", "Folder path filter", "/")
             .option("-q, --search <string>", "Search string")
             .option("--has-problems", "Add this flag to show only designs with problems")
@@ -61,8 +62,8 @@ export class AssetsDesignsCommands {
         command
             .command("link-data-schema")
             .description("Links a data schema to a design")
-            .requiredOption("-d, --design-id <id>", "Design asset ID")
-            .requiredOption("-s, --schema-id <id>", "Data schema asset ID")
+            .requiredOption("-d, --design-id <id>", "Design asset ID", parseNonEmptyString)
+            .requiredOption("-s, --schema-id <id>", "Data schema asset ID", parseNonEmptyString)
             .action(async (options: LinkDataSchemaOptions) => {
                 this.logger.debug(`Entering "assets designs link-data-schema" command. options=${JSON.stringify(options)}.`);
                 await this.linkDataSchema(options);

@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import {
     CreateProjectByRenderHiResScenarioDto,
     CreateProjectBySpecificPipelineScenarioDto,
@@ -14,6 +14,7 @@ import { StorefrontApiClientBuilder } from "../../services/storefront-api-client
 import { ProjectView } from "../../views/project";
 import { AssetProcessorApiClientBuilder } from "../../services/asset-processor-api-client-builder";
 import { DesignProblemDto } from "@aurigma/axios-asset-processor-api-client";
+import { parseNonEmptyString, parsePositiveInteger } from "../shared/option-parsers";
 
 interface ProjectCreateRenderHiresOptions {
     storefrontId: number;
@@ -56,15 +57,31 @@ export class ProjectsCreateCommands {
         command
             .command("render-hires")
             .description("Creates a project by running RenderHiRes scenario")
-            .requiredOption("-s --storefrontId <number>", "A storefront ID.")
-            .requiredOption("-d --designId <string>", "A private design ID.")
-            .option("-o --ownerId <string>", "A private design owner ID. If omitted, it is considered that designId is a public design (a copy is created).")
-            .option("--outputFileName <string>", "Render scenario output name")
-            .option("--dpi <number>", "Output DPI", "300")
-            .option("--format <value>", "Output format (Pdf, Jpeg, Png, Tiff, Bmp)", RenderHiResScenarioOutputFormat.Pdf)
-            .option("--colorSpace <value>", "Output color space (Rgb, Grayscale, Cmyk)", RenderHiResScenarioOutputColorSpace.Cmyk)
-            .option("--flipMode <value>", "Output flip mode (None, Horizontal, Vertical, Both)", RenderHiResScenarioOutputFlipMode.None)
-            .option("--rotateMode <value>", "Output rotate mode (None, Rotate90, Rotate180, Rotate270, Auto)", RenderHiResScenarioOutputRotateMode.None)
+            .requiredOption("-s --storefrontId <number>", "A storefront ID.", parsePositiveInteger)
+            .requiredOption("-d --designId <string>", "A private design ID.", parseNonEmptyString)
+            .option("-o --ownerId <string>", "A private design owner ID. If omitted, it is considered that designId is a public design (a copy is created).", parseNonEmptyString)
+            .option("--outputFileName <string>", "Render scenario output name", parseNonEmptyString)
+            .option("--dpi <number>", "Output DPI", parsePositiveInteger, 300)
+            .addOption(
+                new Option("--format <value>", "Output format")
+                    .choices(Object.values(RenderHiResScenarioOutputFormat))
+                    .default(RenderHiResScenarioOutputFormat.Pdf)
+            )
+            .addOption(
+                new Option("--colorSpace <value>", "Output color space")
+                    .choices(Object.values(RenderHiResScenarioOutputColorSpace))
+                    .default(RenderHiResScenarioOutputColorSpace.Cmyk)
+            )
+            .addOption(
+                new Option("--flipMode <value>", "Output flip mode")
+                    .choices(Object.values(RenderHiResScenarioOutputFlipMode))
+                    .default(RenderHiResScenarioOutputFlipMode.None)
+            )
+            .addOption(
+                new Option("--rotateMode <value>", "Output rotate mode")
+                    .choices(Object.values(RenderHiResScenarioOutputRotateMode))
+                    .default(RenderHiResScenarioOutputRotateMode.None)
+            )
             .option("--anonymousAccess", "Enable anonymous access for rendered result")
             .action(async (options: ProjectCreateRenderHiresOptions) => {
                 this.logger.debug(`Entering "projects create render-hires" command. options=${JSON.stringify(options)}.`);
@@ -74,10 +91,10 @@ export class ProjectsCreateCommands {
         command
             .command("through-pipeline")
             .description("Creates a project by running a specified order processing pipeline")
-            .requiredOption("-s, --storefrontId <number>", "A storefront ID.")
-            .requiredOption("-d, --designId <string>", "A private design ID.")
-            .requiredOption("-p, --pipelineId <number>", "A pipeline ID.")
-            .option("-o, --ownerId <string>", "A private design owner ID. If omitted, it is considered that designId is a public design (a copy is created).")
+            .requiredOption("-s, --storefrontId <number>", "A storefront ID.", parsePositiveInteger)
+            .requiredOption("-d, --designId <string>", "A private design ID.", parseNonEmptyString)
+            .requiredOption("-p, --pipelineId <number>", "A pipeline ID.", parsePositiveInteger)
+            .option("-o, --ownerId <string>", "A private design owner ID. If omitted, it is considered that designId is a public design (a copy is created).", parseNonEmptyString)
             .action(async (options: ProjectCreatePipelineOptions) => {
                 this.logger.debug(`Entering "projects create through-pipeline" command. options=${JSON.stringify(options)}.`);
                 await this.createByPipelineScenario(options);

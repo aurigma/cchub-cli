@@ -1,7 +1,7 @@
 import { inject, injectable } from 'tsyringe';
 import { Logger } from "winston";
 import { ProjectView } from '../views/project';
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import {
     DatePeriod,
     ProjectOutputFileDetailsDto,
@@ -15,6 +15,7 @@ import { ProjectsCreateCommands } from './projects/create';
 
 import { VdpDataModel } from "@aurigma/axios-design-atoms-api-client";
 import { DesignAtomsApiClientBuilder } from '../services/design-atoms-api-client-builder';
+import { parseCommaSeparatedList, parseNonEmptyString, parsePositiveInteger } from './shared/option-parsers';
 
 interface ProjectSearchOptions {
     storefrontId: number;
@@ -29,7 +30,7 @@ export interface FindProjectsVDPOptions {
 
 interface ProjectGetDesignOptions {
     projectId: number;
-    outFile: string | boolean;
+    outFile?: string;
 }
 
 interface ProjectProcessingStatusOptions {
@@ -65,8 +66,8 @@ export class ProjectCommands {
         command
             .command("get-design")
             .description('Download a design file from a specified project.')
-            .requiredOption("-i, --projectId <number>", "A project ID where to extract a design.")
-            .option("-o, --out-file <string>", "A location and file name to save it on a local machine. Omit it to use the design ID as a name.", false)
+            .requiredOption("-i, --projectId <number>", "A project ID where to extract a design.", parsePositiveInteger)
+            .option("-o, --out-file <string>", "A location and file name to save it on a local machine. Omit it to use the design ID as a name.", parseNonEmptyString)
             .action(async (options: ProjectGetDesignOptions) => {
                 this.logger.debug(`Entering "projects get-design" command. options=${JSON.stringify(options)}.`);
                 await this.getDesignFromProject(options);
@@ -75,8 +76,12 @@ export class ProjectCommands {
         command
             .command("search")
             .description('Searches projects by order number, name, etc. (same as in BackOffice).')
-            .requiredOption("-s, --storefrontId <number>", "A storefront ID.")
-            .option("-p, --period <string>", "A period - All, Today, Last7Days or Last30Days (default).", DatePeriod.Last30Days)
+            .requiredOption("-s, --storefrontId <number>", "A storefront ID.", parsePositiveInteger)
+            .addOption(
+                new Option("-p, --period <value>", "A period used to filter projects")
+                    .choices(Object.values(DatePeriod))
+                    .default(DatePeriod.Last30Days)
+            )
             .argument("[searchString]", "A search string used to filter out projects.", "")
             .action(async (searchString?: string, options?: ProjectSearchOptions) => {
                 this.logger.debug(`Entering "projects search" command. options=${JSON.stringify(options)}. Argument: ${searchString}`);
@@ -87,8 +92,8 @@ export class ProjectCommands {
         command
             .command("view-vdp")
             .description('Searches projects by order number, name, etc. (same as in BackOffice).')
-            .requiredOption("-s, --storefrontId <number>", "A storefront ID.")
-            .option('-o, --orderIds <items>', 'Comma-separated list of ecommerce order IDs', (val: string, _: any) => val.split(","))
+            .requiredOption("-s, --storefrontId <number>", "A storefront ID.", parsePositiveInteger)
+            .requiredOption('-o, --orderIds <items>', 'Comma-separated list of ecommerce order IDs', parseCommaSeparatedList)
             .argument("[searchString]", "A search string used to filter out projects.", "")
             .action(async (searchString?: string, options?: FindProjectsVDPOptions) => {
                 this.logger.debug(`Entering "projects search" command. options=${JSON.stringify(options)}. Argument: ${searchString}`);
@@ -99,7 +104,7 @@ export class ProjectCommands {
         command
             .command("processing-status")
             .description("Gets project processing status and output artifacts")
-            .requiredOption("-i, --projectId <number>", "A project ID.")
+            .requiredOption("-i, --projectId <number>", "A project ID.", parsePositiveInteger)
             .option("--download", "Download completed output artifacts")
             .action(async (options: ProjectProcessingStatusOptions) => {
                 this.logger.debug(`Entering "projects processing-status" command. options=${JSON.stringify(options)}.`);
@@ -113,15 +118,8 @@ export class ProjectCommands {
         this.logger.debug(`Entered ProjectCommands.getProjectProcessingStatus. options=${JSON.stringify(options)}.`);
 
         try {
-            const projectId = Number.parseInt(String(options.projectId), 10);
-            if (Number.isNaN(projectId)) {
-                this.logger.error(`Invalid projectId: ${options.projectId}`);
-                process.exitCode = 2;
-                return;
-            }
-
             const projectsClient = await this.storefrontApi.buildProjectsApiClient();
-            const result = await projectsClient.getProjectProcessingResults(projectId, null, null);
+            const result = await projectsClient.getProjectProcessingResults(options.projectId, null, null);
 
             console.log(this.view.processingResults(result));
 

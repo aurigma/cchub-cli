@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { DesignDto } from "@aurigma/axios-asset-storage-api-client";
 import { DesignAtomsServiceApiClient } from "@aurigma/axios-design-atoms-api-client";
 import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
@@ -10,6 +10,7 @@ import { AssetProcessorApiClientBuilder } from "../../services/asset-processor-a
 import { readFile } from "node:fs/promises";
 import { VdpDatasetCsvConverter } from "../../services/vdp-dataset-csv-converter";
 import { DatasetOutputFormat, VdpDataSet } from "../../types/vdp-dataset";
+import { parseNonEmptyString, parseNonNegativeInteger, parsePositiveInteger } from "../shared/option-parsers";
 
 interface PrivateDesignListOptions {
     skip: number;
@@ -31,13 +32,13 @@ interface PrivateDesignFromPublicOptions {
 interface PrivateDesignGetDatasetOptions {
     designId: string;
     ownerId: string;
-    output?: string;
+    output: DatasetOutputFormat;
 }
 
 interface PrivateDesignUpdateDatasetOptions {
-    designId?: string;
-    ownerId?: string;
-    dataset?: string;
+    designId: string;
+    ownerId: string;
+    dataset: string;
     append?: boolean;
 }
 
@@ -63,10 +64,10 @@ export class AssetsPrivateDesignsCommands {
         command
             .command("list")
             .description("Lists private design assets from asset storage")
-            .option("-s, --skip <number>", "How many items to skip", "0")
-            .option("-t, --take <number>", "How many items to take", "25")
+            .option("-s, --skip <number>", "How many items to skip", parseNonNegativeInteger, 0)
+            .option("-t, --take <number>", "How many items to take", parsePositiveInteger, 25)
             .option("-q, --search <string>", "Search string")
-            .option("-o, --ownerId <string>", "Private storage owner ID")
+            .option("-o, --ownerId <string>", "Private storage owner ID", parseNonEmptyString)
             .action(async (options: PrivateDesignListOptions) => {
                 this.logger.debug(`Entering "assets private-designs list" command. options=${JSON.stringify(options)}.`);
                 await this.listPrivateDesigns(options);
@@ -75,8 +76,8 @@ export class AssetsPrivateDesignsCommands {
         command
             .command("from-public")
             .description("Creates a private design based on a public design")
-            .option("-d --designId <string>", "Public design ID")
-            .option("-o --ownerId <string>", "New owner ID")
+            .requiredOption("-d --designId <string>", "Public design ID", parseNonEmptyString)
+            .requiredOption("-o --ownerId <string>", "New owner ID", parseNonEmptyString)
             .action(async (options: PrivateDesignFromPublicOptions) => {
                 this.logger.debug(`Entering "assets private-designs get-variables" command. options=${JSON.stringify(options)}.`);
                 await this.copyFromPublic(options);
@@ -86,8 +87,8 @@ export class AssetsPrivateDesignsCommands {
         command
             .command("get-variables")
             .description("Get a list of variables from a specified private design")
-            .option("-d, --designId <string>", "Design ID")
-            .option("-o, --ownerId <string>", "Private storage owner ID")
+            .requiredOption("-d, --designId <string>", "Design ID", parseNonEmptyString)
+            .requiredOption("-o, --ownerId <string>", "Private storage owner ID", parseNonEmptyString)
             .action(async (options: PrivateDesignGetVariablesOptions) => {
                 this.logger.debug(`Entering "assets private-designs get-variables" command. options=${JSON.stringify(options)}.`);
                 await this.getVariables(options);
@@ -96,9 +97,13 @@ export class AssetsPrivateDesignsCommands {
         command
             .command("get-dataset")
             .description("Get VDP dataset from a specified private design. Default output is table.")
-            .option("-d --designId <string>", "Design ID")
-            .option("-o --ownerId <string>", "Private storage owner ID")
-            .option("--output <type>", "Output type: json, csv, table. Default: table. csv/table omit surface-level fields (surfaceBinding, iterateOverSurfacesFirst).", "table")
+            .requiredOption("-d --designId <string>", "Design ID", parseNonEmptyString)
+            .requiredOption("-o --ownerId <string>", "Private storage owner ID", parseNonEmptyString)
+            .addOption(
+                new Option("--output <type>", "Output type. csv/table omit surface-level fields (surfaceBinding, iterateOverSurfacesFirst).")
+                    .choices([...AssetsPrivateDesignsCommands.datasetOutputFormats])
+                    .default("table")
+            )
             .addHelpText("after", "\nExamples:\n  assets private-designs get-dataset -d <designId> -o <ownerId>\n  assets private-designs get-dataset -d <designId> -o <ownerId> --output json\n  assets private-designs get-dataset -d <designId> -o <ownerId> --output csv")
             .action(async (options: PrivateDesignGetDatasetOptions) => {
                 this.logger.debug(`Entering "assets private-designs get-dataset" command. options=${JSON.stringify(options)}.`);
@@ -108,9 +113,9 @@ export class AssetsPrivateDesignsCommands {
         command
             .command("update-dataset")
             .description("Update VDP dataset from CSV for a specified private design")
-            .option("-d, --designId <string>", "Design ID")
-            .option("-o, --ownerId <string>", "Private storage owner ID")
-            .option("--dataset <string>", "Dataset CSV file path")
+            .requiredOption("-d, --designId <string>", "Design ID", parseNonEmptyString)
+            .requiredOption("-o, --ownerId <string>", "Private storage owner ID", parseNonEmptyString)
+            .requiredOption("--dataset <string>", "Dataset CSV file path", parseNonEmptyString)
             .option("--append", "Append CSV rows to existing VDP dataset")
             .action(async (options: PrivateDesignUpdateDatasetOptions) => {
                 this.logger.debug(`Entering "assets private-designs update-dataset" command. options=${JSON.stringify(options)}.`);
@@ -145,40 +150,15 @@ export class AssetsPrivateDesignsCommands {
         this.logger.debug(`Entered AssetsPrivateDesignsCommands.getDataset. options=${JSON.stringify(options)}.`);
 
         try {
-            const designId = options.designId?.trim();
-            const ownerId = options.ownerId?.trim();
-            const output = this.parseDatasetOutputFormat(options.output);
-            if (!designId || !ownerId) {
-                this.logger.error("Both designId and ownerId are required.");
-                process.exitCode = 2;
-                return;
-            }
-            if (!output) {
-                this.logger.error(`Invalid output format: "${options.output}". Allowed values: ${AssetsPrivateDesignsCommands.datasetOutputFormats.join(", ")}.`);
-                process.exitCode = 2;
-                return;
-            }
-
             const client = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
-            const result = await this.tryLoadVdpData(client, designId, ownerId);
+            const result = await this.tryLoadVdpData(client, options.designId, options.ownerId);
             const dataset = (result?.vdpDataSet ?? null) as VdpDataSet | null;
 
-            console.log(this.privateDesignsView.dataset(dataset, output));
+            console.log(this.privateDesignsView.dataset(dataset, options.output));
         } catch (error) {
             this.logger.error(`Failed to get dataset. Error: ${error}`);
             process.exitCode = 1;
         }
-    }
-
-    private parseDatasetOutputFormat(value?: string): DatasetOutputFormat | null {
-        const normalized = value?.trim().toLowerCase() as DatasetOutputFormat | undefined;
-        if (!normalized) {
-            return "table";
-        }
-
-        return AssetsPrivateDesignsCommands.datasetOutputFormats.includes(normalized)
-            ? normalized
-            : null;
     }
 
     private async updateDataset(options: PrivateDesignUpdateDatasetOptions): Promise<void> {
@@ -188,12 +168,6 @@ export class AssetsPrivateDesignsCommands {
             const designId = options.designId;
             const ownerId = options.ownerId;
             const datasetPath = options.dataset;
-            if (!designId || !ownerId || !datasetPath) {
-                this.logger.error("designId, ownerId and dataset are required.");
-                process.exitCode = 2;
-                return;
-            }
-
             const csv = await readFile(datasetPath, "utf-8");
             const client = await this.designAtomsApi.buildDesignAtomsServiceApiClient();
             const variables = await client.getVariables(designId, ownerId);

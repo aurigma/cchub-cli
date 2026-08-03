@@ -1,10 +1,12 @@
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { DesignGenerator } from "../services/design-generator";
 import { DesignSaveService } from "../services/design-save-service";
+import { parseNonEmptyString } from "./shared/option-parsers";
 
-type GenerationTarget = "cchub" | "local";
+const GENERATION_TARGETS = ["cchub", "local"] as const;
+type GenerationTarget = typeof GENERATION_TARGETS[number];
 
 interface GenerateHelloWorldOptions {
     target: GenerationTarget;
@@ -37,9 +39,13 @@ export class GenerateCommands {
         command
             .command("hello-world")
             .description("Generates a hello-world design.")
-            .requiredOption("-t, --target <target>", "Target where to save the result (cchub|local).")
-            .requiredOption("-f, --filename <filename>", "Target filename.")
-            .option("-i, --image <source>", "Source for create image in design. Can be a file path, asset storage ID, or URL")
+            .addOption(
+                new Option("-t, --target <target>", "Target where to save the result")
+                    .choices([...GENERATION_TARGETS])
+                    .makeOptionMandatory()
+            )
+            .requiredOption("-f, --filename <filename>", "Target filename.", parseNonEmptyString)
+            .option("-i, --image <source>", "Source for create image in design. Can be a file path, asset storage ID, or URL", parseNonEmptyString)
             .action(async (options: GenerateHelloWorldOptions) => {
                 await this.handleHelloWorld(options);
             });
@@ -47,8 +53,8 @@ export class GenerateCommands {
         command
             .command("sample-vdp-design")
             .description("Generates a design to test VDP functionality.")
-            .option("-f, --filename <filename>", "A target filename.")
-            .option("-o, --ownerId <ownerId>", "A target owner ID. Omit to make it public.")
+            .option("-f, --filename <filename>", "A target filename.", parseNonEmptyString)
+            .option("-o, --ownerId <ownerId>", "A target owner ID. Omit to make it public.", parseNonEmptyString)
             .action(async (options: GenerateVdpDesignOptions) => {
                 await this.handleSampleVdpDesign(options);
             });
@@ -58,13 +64,6 @@ export class GenerateCommands {
 
     private async handleHelloWorld(options: GenerateHelloWorldOptions): Promise<void> {
         this.logger.debug(`Entered GenerateCommands.handleHelloWorld. options=${JSON.stringify(options)}.`);
-
-        if (options.target !== "cchub" && options.target !== "local") {
-            this.logger.error(`Invalid target value: ${options.target}. Expected "cchub" or "local".`);
-            console.error("Invalid value for --target. Allowed values: cchub, local.");
-            process.exitCode = 2;
-            return;
-        }
 
         try {
             const helloWorldProduct = await this.designGenerator.generateHelloWorld(options.image);

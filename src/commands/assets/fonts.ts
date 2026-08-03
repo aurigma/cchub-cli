@@ -7,6 +7,7 @@ import { FontDto } from "@aurigma/axios-asset-storage-api-client";
 import { AssetProcessorApiClientBuilder } from "../../services/asset-processor-api-client-builder";
 import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
 import { FontListRow, FontsView } from "../../views/fonts";
+import { parseNonEmptyString } from "../shared/option-parsers";
 
 @injectable()
 export class AssetsFontsCommands {
@@ -30,7 +31,7 @@ export class AssetsFontsCommands {
         command
             .command("import")
             .description("Imports a local font file to asset processor root path")
-            .argument("<fontFile>", "Local path to a font file")
+            .argument("<fontFile>", "Local path to a font file", parseNonEmptyString)
             .action(async (fontFile: string) => {
                 this.logger.debug(`Entering "assets fonts import" command. fontFile=${fontFile}.`);
                 await this.importFont(fontFile);

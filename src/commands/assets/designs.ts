@@ -5,6 +5,12 @@ import { DesignDto } from "@aurigma/axios-asset-storage-api-client";
 import { AssetStorageApiClientBuilder } from "../../services/asset-storage-api-client-builder";
 import { DesignListRow, DesignsView } from "../../views/designs";
 import { AssetSortField, ASSET_SORT_FIELDS } from "../assets";
+import { DesignDataSchemaService } from "../../services/design-data-schema-service";
+
+interface LinkDataSchemaOptions {
+    designId: string;
+    schemaId: string;
+}
 
 interface DesignListOptions {
     skip: number;
@@ -19,10 +25,12 @@ interface DesignListOptions {
 export class AssetsDesignsCommands {
     constructor(
         @inject(AssetStorageApiClientBuilder) private readonly assetStorageApi: AssetStorageApiClientBuilder,
+        @inject(DesignDataSchemaService) private readonly designDataSchemaService: DesignDataSchemaService,
         @inject(DesignsView) private readonly designsView: DesignsView,
         @inject("Logger") private readonly logger: Logger
     ) {
         this.assetStorageApi = assetStorageApi;
+        this.designDataSchemaService = designDataSchemaService;
         this.designsView = designsView;
         this.logger = logger;
     }
@@ -50,7 +58,52 @@ export class AssetsDesignsCommands {
                 await this.listDesigns(options);
             });
 
+        command
+            .command("link-data-schema")
+            .description("Links a data schema to a design")
+            .requiredOption("-d, --design-id <id>", "Design asset ID")
+            .requiredOption("-s, --schema-id <id>", "Data schema asset ID")
+            .action(async (options: LinkDataSchemaOptions) => {
+                this.logger.debug(`Entering "assets designs link-data-schema" command. options=${JSON.stringify(options)}.`);
+                await this.linkDataSchema(options);
+            });
+
         return command;
+    }
+
+    private async linkDataSchema(options: LinkDataSchemaOptions): Promise<void> {
+        const designId = options.designId.trim();
+        const schemaId = options.schemaId.trim();
+
+        if (!designId || !schemaId) {
+            this.logger.error("Both designId and schemaId are required.");
+            console.error(this.designsView.invalidDataSchemaLinkArguments());
+            process.exitCode = 2;
+            return;
+        }
+
+        try {
+            const design = await this.designDataSchemaService.link(designId, schemaId);
+            this.logger.info(`Data schema linked successfully. designId=${designId}, schemaId=${schemaId}, hasProblems=${design.hasProblems}.`);
+
+            if (design.hasProblems !== true) {
+                console.log(this.designsView.dataSchemaLinked(designId, schemaId));
+                return;
+            }
+
+            try {
+                const problems = await this.designDataSchemaService.check(designId);
+                console.log(this.designsView.dataSchemaLinkedWithProblems(designId, schemaId, problems));
+            } catch (error) {
+                this.logger.error(`Data schema was linked, but design problems could not be retrieved. designId=${designId}, schemaId=${schemaId}. Error: ${error}`);
+                console.error(this.designsView.dataSchemaLinkedButCheckFailed(designId, schemaId));
+                process.exitCode = 1;
+            }
+        } catch (error) {
+            this.logger.error(`Failed to link data schema. designId=${designId}, schemaId=${schemaId}. Error: ${error}`);
+            console.error(this.designsView.dataSchemaLinkFailed(designId, schemaId));
+            process.exitCode = 1;
+        }
     }
 
     private async listDesigns(options: DesignListOptions): Promise<void> {

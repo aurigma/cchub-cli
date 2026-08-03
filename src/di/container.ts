@@ -17,6 +17,7 @@ import { ProjectView } from "../views/project";
 import { GenerateCommands } from "../commands/generate";
 import { DesignGenerator } from "../services/design-generator";
 import { DesignSaveService } from "../services/design-save-service";
+import { DesignDataSchemaService } from "../services/design-data-schema-service";
 import { VdpDatasetCsvConverter } from "../services/vdp-dataset-csv-converter";
 import { AssetsCommands } from "../commands/assets";
 import { AssetsDesignsCommands } from "../commands/assets/designs";
@@ -25,6 +26,8 @@ import { AssetsPrivateDesignsCommands } from "../commands/assets/private-designs
 import { DesignsView } from "../views/designs";
 import { FontsView } from "../views/fonts";
 import { PrivateDesignsView } from "../views/private-designs";
+import { DataSchemasView } from "../views/data-schemas";
+import { AssetsDataSchemasCommands } from "../commands/assets/data-schemas";
 import { ProjectsCreateCommands } from "../commands/projects/create";
 import { TokenStore } from "../services/token-store";
 import { AuthCommands } from "../commands/auth";
@@ -88,6 +91,10 @@ function registerViews() {
         { useClass: PrivateDesignsView }
     );
 
+    container.register(DataSchemasView,
+        { useClass: DataSchemasView }
+    );
+
     container.register(AuthView,
         { useClass: AuthView }
     );
@@ -124,6 +131,10 @@ function registerCommands() {
 
     container.register(AssetsPrivateDesignsCommands, {
         useClass: AssetsPrivateDesignsCommands
+    });
+
+    container.register(AssetsDataSchemasCommands, {
+        useClass: AssetsDataSchemasCommands
     });
 
     container.register(ProjectsCreateCommands, {
@@ -192,6 +203,10 @@ function registerServices() {
 
     container.register(DesignSaveService, {
         useClass: DesignSaveService
+    });
+
+    container.register(DesignDataSchemaService, {
+        useClass: DesignDataSchemaService
     });
 
     container.register(VdpDatasetCsvConverter, {

@@ -1,4 +1,4 @@
-import { ApiClientConfiguration, PrivateDesignProcessorApiClient, FontProcessorApiClient } from "@aurigma/axios-asset-processor-api-client";
+import { ApiClientConfiguration, DesignProcessorApiClient, PrivateDesignProcessorApiClient, FontProcessorApiClient } from "@aurigma/axios-asset-processor-api-client";
 import { BaseCCHubApiClientBuilder, IApiClientConfiguration } from "./base-cchub-api-client-builder";
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
@@ -30,6 +30,12 @@ export class AssetProcessorApiClientBuilder extends BaseCCHubApiClientBuilder {
         const apiClientConfig = await this.initApiClientConfiguration() as ApiClientConfiguration;
 
         return new PrivateDesignProcessorApiClient(apiClientConfig);
+    }
+
+    public async buildDesignProcessorApiClient(): Promise<DesignProcessorApiClient> {
+        const apiClientConfig = await this.initApiClientConfiguration() as ApiClientConfiguration;
+
+        return new DesignProcessorApiClient(apiClientConfig);
     }
 
 }

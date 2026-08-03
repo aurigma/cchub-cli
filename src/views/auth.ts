@@ -47,6 +47,10 @@ export class AuthView {
         console.log(`Session file: ${authFilePath}`);
     }
 
+    public renderLoginError(message: string): void {
+        console.error(`Interactive authentication failed: ${message}`);
+    }
+
     public renderError(message: string): void {
         console.error(message);
     }

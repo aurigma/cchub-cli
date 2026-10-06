@@ -39,6 +39,13 @@ import { CreateProjectByRenderHiResUseCase } from "../use-cases/projects/create-
 import { ProjectCreationDesignPreparationService } from "../services/projects/project-creation-design-preparation";
 
 import { JsonProductSerializer } from "@aurigma/design-atoms/Serialization";
+import { PriceCommands } from "../commands/products/price";
+import { PriceView } from "../views/price";
+import { PriceCalculatorApiClientBuilder } from "../services/api/price-calculator-api-client-builder";
+import { ProductsCommands } from "../commands/products";
+import { ProductsVariantsCommands } from "../commands/products/variants";
+import { ProductsView } from "../views/products";
+import { CalculatePriceUseCase } from "../use-cases/products/calculate-price";
 
 const registerDependencies = () => {
 
@@ -70,6 +77,8 @@ const registerDependencies = () => {
 };
 
 function registerViews() {
+    container.register(ProductsView, { useClass: ProductsView });
+    container.register(PriceView, { useClass: PriceView });
     container.register(StorefrontView,
         { useClass: StorefrontView }
     );
@@ -104,6 +113,9 @@ function registerViews() {
 }
 
 function registerCommands() {
+    container.register(ProductsCommands, { useClass: ProductsCommands });
+    container.register(ProductsVariantsCommands, { useClass: ProductsVariantsCommands });
+    container.register(PriceCommands, { useClass: PriceCommands });
     container.register(StorefrontCommands, {
         useClass: StorefrontCommands
     });
@@ -150,6 +162,7 @@ function registerCommands() {
 }
 
 function registerApiClientBuilders() {
+    container.register(PriceCalculatorApiClientBuilder, { useClass: PriceCalculatorApiClientBuilder });
     container.register(AssetStorageApiClientBuilder, {
         useClass: AssetStorageApiClientBuilder
     });
@@ -172,6 +185,7 @@ function registerApiClientBuilders() {
 }
 
 function registerServices() {
+    container.register(CalculatePriceUseCase, { useClass: CalculatePriceUseCase });
     container.register(
         CCHubConfiguration,
         { useClass: CCHubConfiguration },

@@ -1,5 +1,15 @@
 import { InvalidArgumentError } from "commander";
 
+export function parseNonNegativeNumber(value: string): number {
+    const normalized = value.trim();
+    const parsed = Number(normalized);
+    if (!/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(normalized)
+        || !Number.isFinite(parsed) || parsed < 0) {
+        throw new InvalidArgumentError("Expected a finite non-negative number (use a dot for decimals).");
+    }
+    return parsed;
+}
+
 export function parseInteger(value: string): number {
     const normalized = value.trim();
     const parsed = Number(normalized);

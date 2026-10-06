@@ -17,6 +17,7 @@
     "@aurigma/axios-asset-storage-api-client": "^2.76.5",
     "@aurigma/axios-backoffice-api-client": "^2.62.12",
     "@aurigma/axios-design-atoms-api-client": "^2.71.8",
+    "@aurigma/axios-price-calculator-api-client": "^1.17.5",
     "@aurigma/axios-storefront-api-client": "^2.62.12",
     "@aurigma/design-atoms": "^7.1.72",
     "axios": "^1.13.5",

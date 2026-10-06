@@ -12,6 +12,7 @@ import { Logger } from "winston";
 import { AuthCommands } from "./commands/auth";
 import packageMetadata from "../package.json";
 import { handleCliError } from "./cli/error-handler";
+import { ProductsCommands } from "./commands/products";
 
 async function main(): Promise<void> {
     dotenv.config();
@@ -33,6 +34,7 @@ async function main(): Promise<void> {
     container.resolve(GenerateCommands).addCli(program);
     container.resolve(AssetsCommands).addCli(program);
     container.resolve(AuthCommands).addCli(program);
+    container.resolve(ProductsCommands).addCli(program);
 
     try {
         await program.parseAsync();

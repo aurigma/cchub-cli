@@ -1,3 +1,4 @@
+import { ListPresentation, TableListView } from "./list";
 import { ProjectDto, ProjectOutputFileDetailsDto, ProjectProcessingResultsDto, ProjectProcessingStatus } from "@aurigma/axios-storefront-api-client";
 import { Logger } from "winston";
 import { injectable, inject } from "tsyringe";
@@ -7,17 +8,18 @@ import { success, error, msg } from "../utils/chalks";
 import { DesignProblemDto } from "@aurigma/axios-asset-processor-api-client";
 import chalk from "chalk";
 
+export type ProjectListRow = Pick<ProjectDto, "id" | "name" | "storefrontId" | "orderNumber" | "created">;
+
 @injectable()
-export class ProjectView {
+export class ProjectView extends TableListView<ProjectListRow> implements ListPresentation<ProjectListRow> {
+    public readonly entityNamePlural = "projects";
+    public readonly tableColumns = ["id", "name", "storefrontId", "orderNumber", "created"] as const;
+    public readonly csvColumns = this.tableColumns;
+
     constructor(
         @inject("Logger") private readonly logger: Logger
     ) {
-        this.logger = logger;
-    }
-
-    listAsTable(storefronts: ProjectDto[]): string {
-        this.logger.debug("Entered ProjectView.listAsTable");
-        return dtoAsTable(storefronts, ['id', 'name', 'storefrontId', 'orderNumber', 'created'], 'projects');
+        super();
     }
 
     listVariables(vdpFields: Record<string, unknown>[]) {
@@ -87,9 +89,12 @@ export class ProjectView {
         this.logger.debug(`Entered ProjectView.processingOutputFilesAsTable. items=${files?.length ?? 0}.`);
         return dtoAsTable(
             files,
-            ["name", "size", "format", "artifactId", "anonymousAccess"],
-            "project output files",
-            (name: string, value: unknown) => name === "size" ? formatByteSize(Number(value)) : value
+            [
+                "name",
+                { header: "size", value: file => file.size == null ? null : formatByteSize(Number(file.size)) },
+                "format", "artifactId", "anonymousAccess"
+            ],
+            "project output files"
         );
     }
 }

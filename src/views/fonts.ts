@@ -1,6 +1,6 @@
-import { inject, injectable } from "tsyringe";
-import { Logger } from "winston";
-import { dtoAsTable } from "../utils/dto-as-table";
+import { ListPresentation, TableListView } from "./list";
+import { CsvColumn } from "../utils/csv";
+import { injectable } from "tsyringe";
 
 export interface FontListRow {
     id?: string | null;
@@ -11,15 +11,8 @@ export interface FontListRow {
 }
 
 @injectable()
-export class FontsView {
-    constructor(
-        @inject("Logger") private readonly logger: Logger
-    ) {
-        this.logger = logger;
-    }
-
-    listAsTable(fonts: FontListRow[]): string {
-        this.logger.debug(`Entered FontsView.listAsTable. items=${fonts?.length ?? 0}.`);
-        return dtoAsTable(fonts, ["id", "name", "postscriptName", "lastModified"], "fonts");
-    }
+export class FontsView extends TableListView<FontListRow> implements ListPresentation<FontListRow> {
+    public readonly entityNamePlural = "fonts";
+    public readonly tableColumns = ["id", "name", "postscriptName", "lastModified"] as const;
+    public readonly csvColumns: readonly CsvColumn<FontListRow>[] = ["id", "name", "path", "postscriptName", "lastModified"];
 }

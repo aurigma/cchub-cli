@@ -1,17 +1,12 @@
+import { ListPresentation, TableListView } from "./list";
 import { StorefrontDto } from "@aurigma/axios-storefront-api-client";
-import { Logger } from "winston";
-import { injectable, inject } from "tsyringe";
-import { dtoAsTable } from "../utils/dto-as-table";
+import { injectable } from "tsyringe";
+
+export type StorefrontListRow = Pick<StorefrontDto, "id" | "name" | "type" | "created">;
 
 @injectable()
-export class StorefrontView {
-    constructor(
-        @inject("Logger") private readonly logger: Logger
-    ) {
-        this.logger = logger;
-    }
-
-    listAsTable(storefronts: StorefrontDto[]): string {
-        return dtoAsTable(storefronts, ['id', 'name', 'type', 'created'], 'storefronts');
-    }
+export class StorefrontView extends TableListView<StorefrontListRow> implements ListPresentation<StorefrontListRow> {
+    public readonly entityNamePlural = "storefronts";
+    public readonly tableColumns = ["id", "name", "type", "created"] as const;
+    public readonly csvColumns = this.tableColumns;
 }

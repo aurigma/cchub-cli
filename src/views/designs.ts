@@ -1,6 +1,7 @@
-import { inject, injectable } from "tsyringe";
-import { Logger } from "winston";
-import { dtoAsTable } from "../utils/dto-as-table";
+import { ListPresentation, TableListView } from "./list";
+import { CsvColumn } from "../utils/csv";
+import { injectable } from "tsyringe";
+import { TableColumn } from "../utils/dto-as-table";
 import { formatByteSize } from "../utils/format-file-size";
 import { DesignProblemDto } from "@aurigma/axios-asset-processor-api-client";
 import { error, success, warning } from "../utils/chalks";
@@ -15,30 +16,15 @@ export interface DesignListRow {
 }
 
 @injectable()
-export class DesignsView {
-    constructor(
-        @inject("Logger") private readonly logger: Logger
-    ) {
-        this.logger = logger;
-    }
-
-    listAsTable(items: DesignListRow[]): string {
-        this.logger.debug(`Entered DesignsView.listAsTable. items=${items?.length ?? 0}.`);
-        return dtoAsTable(
-            items,
-            ["id", "name", "size", "hasProblems", "lastModifiedDate"],
-            "designs",
-            (name: string, value: unknown) => {
-                if (name === "size") {
-                    return formatByteSize(Number(value));
-                }
-                if (name === "lastModifiedDate") {
-                    return new Date(String(value)).toLocaleString();
-                }
-                return value;
-            }
-        );
-    }
+export class DesignsView extends TableListView<DesignListRow> implements ListPresentation<DesignListRow> {
+    public readonly entityNamePlural = "designs";
+    public readonly tableColumns: readonly TableColumn<DesignListRow>[] = [
+        "id", "name",
+        { header: "size", value: row => row.size == null ? null : formatByteSize(row.size) },
+        "hasProblems",
+        { header: "lastModifiedDate", value: row => row.lastModifiedDate == null ? null : new Date(row.lastModifiedDate).toLocaleString() }
+    ];
+    public readonly csvColumns: readonly CsvColumn<DesignListRow>[] = ["id", "name", "path", "size", "hasProblems", "lastModifiedDate"];
 
     dataSchemaLinked(designId: string, schemaId: string): string {
         return success(`Data schema ${schemaId} linked to design ${designId}. No design problems detected.`);

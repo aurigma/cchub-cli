@@ -1,3 +1,5 @@
+import { listFormatOption, ListFormatOptions } from "../../cli/list-format-option";
+import { ListView } from "../../views/list";
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { Command, Option } from "commander";
@@ -14,7 +16,7 @@ interface LinkDataSchemaOptions {
     schemaId: string;
 }
 
-interface DesignListOptions {
+interface DesignListOptions extends ListFormatOptions {
     skip: number;
     take: number;
     path: string;
@@ -29,6 +31,7 @@ export class AssetsDesignsCommands {
         @inject(AssetStorageApiClientBuilder) private readonly assetStorageApi: AssetStorageApiClientBuilder,
         @inject(DesignDataSchemaService) private readonly designDataSchemaService: DesignDataSchemaService,
         @inject(DesignsView) private readonly designsView: DesignsView,
+        @inject("designsListView") private readonly listView: ListView<DesignListRow>,
         @inject("Logger") private readonly logger: Logger
     ) {
         this.assetStorageApi = assetStorageApi;
@@ -44,6 +47,7 @@ export class AssetsDesignsCommands {
 
         command
             .command("list")
+            .addOption(listFormatOption())
             .description("Lists designs from asset storage")
             .option("-s, --skip <number>", "How many items to skip", parseNonNegativeInteger, 0)
             .option("-t, --take <number>", "How many items to take", parsePositiveInteger, 25)
@@ -129,7 +133,7 @@ export class AssetsDesignsCommands {
         const rows = items
             .map(x => this.mapDesignToRow(x))
             .filter(x => !hasProblems || x.hasProblems)
-        console.log(this.designsView.listAsTable(rows));
+        this.listView.print(rows, options.format);
         this.logger.info(`Found ${result.total ?? items.length} designs for tenant ${tenantId}. skip=${skip}, take=${take}, path=${path}, sort=${sorting}.`);
     }
 

@@ -1,10 +1,12 @@
+import { listFormatOption, ListFormatOptions } from "../../cli/list-format-option";
+import { ListView } from "../../views/list";
 import { Command } from "commander";
 import { inject, injectable } from "tsyringe";
 import { parseNonNegativeInteger, parsePositiveInteger } from "../../cli/option-parsers";
 import { StorefrontApiClientBuilder } from "../../services/api/storefront-api-client-builder";
-import { ProductsView } from "../../views/products";
+import { ProductVariantRow } from "../../views/product-variants";
 
-interface ListVariantsOptions {
+interface ListVariantsOptions extends ListFormatOptions {
     productId: number;
     productVersionId?: number;
     skip: number;
@@ -15,12 +17,13 @@ interface ListVariantsOptions {
 export class ProductsVariantsCommands {
     constructor(
         @inject(StorefrontApiClientBuilder) private readonly storefrontApi: StorefrontApiClientBuilder,
-        @inject(ProductsView) private readonly view: ProductsView
+        @inject("productVariantsListView") private readonly listView: ListView<ProductVariantRow>
     ) {}
 
     public addCli(parentCommand: Command): Command {
         const command = parentCommand.command("variants").description("Allows to work with product variants");
         command.command("list")
+            .addOption(listFormatOption())
             .description("Lists product variants with option values, SKU, price, weight, and availability")
             .requiredOption("-p, --product-id <number>", "Product ID", parsePositiveInteger)
             .option("--product-version-id <number>", "Product version ID", parsePositiveInteger)
@@ -35,7 +38,7 @@ export class ProductsVariantsCommands {
     private async list(options: ListVariantsOptions): Promise<void> {
         const client = await this.storefrontApi.buildProductsApiClient();
         const result = await client.getProductVariants(options.productId, options.productVersionId, options.skip, options.take);
-        console.log(this.view.variantsAsTable((result.items ?? []).map(variant => ({
+        const rows: ProductVariantRow[] = (result.items ?? []).map(variant => ({
             productVariantId: variant.id,
             productUid: variant.uid,
             sku: variant.sku,
@@ -49,6 +52,7 @@ export class ProductsVariantsCommands {
                 optionTitle: option.productOptionTitle,
                 valueTitle: option.productOptionValueTitle
             }))
-        }))));
+        }));
+        this.listView.print(rows, options.format);
     }
 }

@@ -1,3 +1,35 @@
+export type CsvColumn<T> = Extract<keyof T, string> | {
+    header: string;
+    value: (row: T) => unknown;
+};
+
+export function stringifyCsv<T extends object>(
+    rows: readonly T[],
+    columns?: readonly CsvColumn<T>[]
+): string {
+    const fields = columns ?? [...new Set(rows.flatMap(row => Object.keys(row)))] as Extract<keyof T, string>[];
+    const headers = fields.map(field => typeof field === "string" ? field : field.header);
+    const body = rows.map(row => toCsvLine(fields.map(field =>
+        formatCsvValue(typeof field === "string" ? row[field] : field.value(row))
+    )));
+    return [toCsvLine(headers), ...body].join("\n");
+}
+
+function formatCsvValue(value: unknown): string {
+    if (value == null) return "";
+    if (Array.isArray(value)) {
+        return value.map(formatCsvValue).join(", ");
+    }
+    if (typeof value === "object") {
+        return Object.entries(value).map(([key, entry]) => `${key}=${formatCsvValue(entry)}`).join(", ");
+    }
+    return String(value);
+}
+
+function toCsvLine(values: readonly string[]): string {
+    return values.map(value => /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value).join(",");
+}
+
 export function parseCsvToObjects(content: string): Array<Record<string, string>> {
     const rows = parseCsv(content);
     if (rows.length === 0) {

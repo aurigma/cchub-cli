@@ -3,7 +3,16 @@ import { emptyState } from "./chalks";
 import Table from 'cli-table3';
 import { Logger } from "winston";
 
-export function dtoAsTable<T extends object>(dtos: T[], head: Array<keyof T>, entityNamePlural: string, valueProcessorFunc?: Function): string {
+export type TableColumn<T> = keyof T | {
+    header: string;
+    value: (row: T) => Table.Cell;
+};
+
+export function dtoAsTable<T extends object>(
+    dtos: readonly T[],
+    columns: readonly TableColumn<T>[],
+    entityNamePlural: string
+): string {
     const logger: Logger = container.resolve("Logger");
     logger.debug("Entered dtoAsTable");
 
@@ -12,20 +21,23 @@ export function dtoAsTable<T extends object>(dtos: T[], head: Array<keyof T>, en
         return emptyState(`No ${entityNamePlural} match your request`);
     }
 
-    const table = new Table({ head: head.map(String) });
+    const table = new Table({
+        head: columns.map(column => typeof column === "object" ? column.header : String(column))
+    });
     dtos.forEach(dto => {
-        const formatValue = (headTitle: keyof T) => {
-            const value = dto[headTitle];
-            if (value == null) return 'N/A';
-            switch (headTitle) {
+        const row = columns.map(column => {
+            if (typeof column === "object") return column.value(dto) ?? "N/A";
+
+            const value = dto[column];
+            if (value == null) return "N/A";
+            switch (column) {
                 case "created":
                 case "lastModified":
                     return new Date(value.toString()).toLocaleString();
                 default:
-                    return valueProcessorFunc != null ? valueProcessorFunc(headTitle, value) : value;
+                    return value as Table.Cell;
             }
-        };
-        const row = head.map(formatValue);
+        });
         table.push(row);
     });
 

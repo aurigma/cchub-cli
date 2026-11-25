@@ -1,17 +1,12 @@
-import { ProcessingPipelineDto, StorefrontDto } from "@aurigma/axios-storefront-api-client";
-import { Logger } from "winston";
-import { injectable, inject } from "tsyringe";
-import { dtoAsTable } from "../utils/dto-as-table";
+import { ListPresentation, TableListView } from "./list";
+import { ProcessingPipelineDto } from "@aurigma/axios-storefront-api-client";
+import { injectable } from "tsyringe";
+
+export type PipelineListRow = Pick<ProcessingPipelineDto, "id" | "name">;
 
 @injectable()
-export class PipelineView {
-    constructor(
-        @inject("Logger") private readonly logger: Logger
-    ) {
-        this.logger = logger;
-    }
-
-    listAsTable(pipelines: ProcessingPipelineDto[]): string {
-        return dtoAsTable(pipelines, ['id', 'name'], 'processing pipelines');
-    }
+export class PipelineView extends TableListView<PipelineListRow> implements ListPresentation<PipelineListRow> {
+    public readonly entityNamePlural = "processing pipelines";
+    public readonly tableColumns = ["id", "name"] as const;
+    public readonly csvColumns = this.tableColumns;
 }

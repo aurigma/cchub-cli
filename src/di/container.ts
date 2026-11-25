@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { container, Lifecycle } from "tsyringe";
+import { container, InjectionToken, Lifecycle } from "tsyringe";
 import { CCHubConfiguration } from "../config/cchub-configuration";
 import { CCHubAuth } from "../services/auth/cchub-auth";
 import winston from "winston";
@@ -46,6 +46,10 @@ import { ProductsCommands } from "../commands/products";
 import { ProductsVariantsCommands } from "../commands/products/variants";
 import { ProductsView } from "../views/products";
 import { CalculatePriceUseCase } from "../use-cases/products/calculate-price";
+import { ListProductsUseCase } from "../use-cases/products/list-products";
+
+import { ListPresentation, ListView } from "../views/list";
+import { ProductVariantsView } from "../views/product-variants";
 
 const registerDependencies = () => {
 
@@ -64,7 +68,7 @@ const registerDependencies = () => {
                     winston.format.errors({ stack: true })
                 ),
                 transports: [
-                    new winston.transports.Console()
+                    new winston.transports.Console({ stderrLevels: Object.keys(winston.config.npm.levels) })
                 ]
             })
         });
@@ -77,6 +81,17 @@ const registerDependencies = () => {
 };
 
 function registerViews() {
+    container.register(ProductVariantsView, { useClass: ProductVariantsView });
+    registerListView("productsListView", ProductsView);
+    registerListView("productVariantsListView", ProductVariantsView);
+    registerListView("pipelinesListView", PipelineView);
+    registerListView("storefrontsListView", StorefrontView);
+    registerListView("projectsListView", ProjectView);
+    registerListView("fontsListView", FontsView);
+    registerListView("designsListView", DesignsView);
+    registerListView("dataSchemasListView", DataSchemasView);
+    registerListView("privateDesignsListView", PrivateDesignsView);
+
     container.register(ProductsView, { useClass: ProductsView });
     container.register(PriceView, { useClass: PriceView });
     container.register(StorefrontView,
@@ -110,6 +125,15 @@ function registerViews() {
     container.register(AuthView,
         { useClass: AuthView }
     );
+}
+
+function registerListView<T extends object>(
+    token: string,
+    presentation: InjectionToken<ListPresentation<T>>
+): void {
+    container.register<ListView<T>>(token, {
+        useFactory: dependencyContainer => new ListView(dependencyContainer.resolve(presentation))
+    });
 }
 
 function registerCommands() {
@@ -186,6 +210,7 @@ function registerApiClientBuilders() {
 
 function registerServices() {
     container.register(CalculatePriceUseCase, { useClass: CalculatePriceUseCase });
+    container.register(ListProductsUseCase, { useClass: ListProductsUseCase });
     container.register(
         CCHubConfiguration,
         { useClass: CCHubConfiguration },

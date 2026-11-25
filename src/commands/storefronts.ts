@@ -1,6 +1,8 @@
+import { listFormatOption, ListFormatOptions } from "../cli/list-format-option";
+import { ListView } from "../views/list";
 import { inject, injectable } from 'tsyringe';
 import { Logger } from "winston";
-import { StorefrontView } from '../views/storefronts';
+import { StorefrontListRow } from '../views/storefronts';
 import { Command } from 'commander';
 import { BackOfficeApiClientBuilder } from '../services/api/backoffice-api-client-builder';
 
@@ -9,11 +11,10 @@ export class StorefrontCommands {
 
     constructor(
         @inject(BackOfficeApiClientBuilder) private readonly backOfficeApi: BackOfficeApiClientBuilder,
-        @inject(StorefrontView) private readonly storefrontView: StorefrontView,
+        @inject("storefrontsListView") private readonly listView: ListView<StorefrontListRow>,
         @inject("Logger") private readonly logger: Logger
     ) {
         this.backOfficeApi = backOfficeApi;
-        this.storefrontView = storefrontView;
         this.logger = logger;
     }
 
@@ -23,15 +24,16 @@ export class StorefrontCommands {
 
         command
             .command("list")
+            .addOption(listFormatOption())
             .argument("[searchString]", "A search string used to filter out storefronts (by name - partial)")
-            .action(async (searchString: string) => {
-                await this.list(searchString);
+            .action(async (searchString: string | undefined, options: ListFormatOptions) => {
+                await this.list(options, searchString);
             });
 
         return command;
     }
 
-    public async list(searchString?: string) {
+    private async list(options: ListFormatOptions, searchString?: string) {
         this.logger.debug(`Entered StorefrontCommands.list. searchString: ${searchString}`);
 
         const storefrontManagementClient = await this.backOfficeApi.buildStorefrontManagementApiClient();
@@ -45,7 +47,8 @@ export class StorefrontCommands {
         const tenantId = this.backOfficeApi.getCurrentTenantId();
         this.logger.info(`Found ${storefronts.total} storefronts for tenant ${tenantId}. `);
 
-        console.log(this.storefrontView.listAsTable(storefronts.items ?? []));
+        const rows = (storefronts.items ?? []).map(({ id, name, type, created }) => ({ id, name, type, created }));
+        this.listView.print(rows, options.format);
     }
 
 }

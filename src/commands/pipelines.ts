@@ -1,6 +1,8 @@
+import { listFormatOption, ListFormatOptions } from "../cli/list-format-option";
+import { ListView } from "../views/list";
 import { inject, injectable } from 'tsyringe';
 import { Logger } from "winston";
-import { PipelineView } from '../views/pipeline';
+import { PipelineListRow } from '../views/pipeline';
 import { Command } from 'commander';
 import { BackOfficeApiClientBuilder } from '../services/api/backoffice-api-client-builder';
 
@@ -9,11 +11,10 @@ export class PipelineCommands {
 
     constructor(
         @inject(BackOfficeApiClientBuilder) private readonly backOfficeApi: BackOfficeApiClientBuilder,
-        @inject(PipelineView) private readonly pipelineView: PipelineView,
+        @inject("pipelinesListView") private readonly listView: ListView<PipelineListRow>,
         @inject("Logger") private readonly logger: Logger
     ) {
         this.backOfficeApi = backOfficeApi;
-        this.pipelineView = pipelineView;
         this.logger = logger;
     }
 
@@ -23,15 +24,16 @@ export class PipelineCommands {
 
         command
             .command("list")
+            .addOption(listFormatOption())
             .argument("[searchString]", "A search string used to filter out pipelines (by name - partial)")
-            .action(async (searchString: string) => {
-                await this.list(searchString);
+            .action(async (searchString: string | undefined, options: ListFormatOptions) => {
+                await this.list(options, searchString);
             });
 
         return command;
     }
 
-    private async list(searchString?: string) {
+    private async list(options: ListFormatOptions, searchString?: string) {
         this.logger.debug(`Entered PipelineCommands.list. searchString: ${searchString}`);
 
         const productsManagementClient = await this.backOfficeApi.buildProductsManagementApiClient();
@@ -44,9 +46,8 @@ export class PipelineCommands {
         const tenantId = this.backOfficeApi.getCurrentTenantId();
         this.logger.info(`Found ${pipelines.total} pipelines for tenant ${tenantId}. `);
 
-        const items = pipelines.items ?? [];
-
-        console.log(this.pipelineView.listAsTable(items));
+        const rows = (pipelines.items ?? []).map(({ id, name }) => ({ id, name }));
+        this.listView.print(rows, options.format);
     }
 
 }

@@ -1,6 +1,7 @@
+import { ListPresentation, TableListView } from "./list";
 import { inject, injectable } from "tsyringe";
-import { Logger } from "winston";
-import { dtoAsTable } from "../utils/dto-as-table";
+import { CsvColumn } from "../utils/csv";
+import { dtoAsTable, TableColumn } from "../utils/dto-as-table";
 import { formatByteSize } from "../utils/format-file-size";
 import { VariableInfo } from "@aurigma/axios-design-atoms-api-client";
 import { emptyState, success } from "../utils/chalks";
@@ -16,12 +17,19 @@ export interface PrivateDesignListRow {
 }
 
 @injectable()
-export class PrivateDesignsView {
+export class PrivateDesignsView extends TableListView<PrivateDesignListRow> implements ListPresentation<PrivateDesignListRow> {
+    public readonly entityNamePlural = "private designs";
+    public readonly tableColumns: readonly TableColumn<PrivateDesignListRow>[] = [
+        "id", "name", "ownerId",
+        { header: "size", value: row => row.size == null ? null : formatByteSize(row.size) },
+        "lastModified"
+    ];
+    public readonly csvColumns: readonly CsvColumn<PrivateDesignListRow>[] = ["id", "name", "ownerId", "size", "lastModified"];
+
     constructor(
-        @inject(VdpDatasetCsvConverter) private readonly vdpDatasetCsvConverter: VdpDatasetCsvConverter,
-        @inject("Logger") private readonly logger: Logger
+        @inject(VdpDatasetCsvConverter) private readonly vdpDatasetCsvConverter: VdpDatasetCsvConverter
     ) {
-        this.logger = logger;
+        super();
     }
 
     variables(variables: VariableInfo[]) {
@@ -51,15 +59,6 @@ export class PrivateDesignsView {
 
     datasetUpdated(): string {
         return success("Dataset updated");
-    }
-
-    listAsTable(items: PrivateDesignListRow[]): string {
-        this.logger.debug(`Entered PrivateDesignsView.listAsTable. items=${items?.length ?? 0}.`);
-        return dtoAsTable(
-            items, 
-            ["id", "name", "ownerId", "size", "lastModified"], 
-            "private designs", 
-            (name: string, value: number) => name == "size" ? formatByteSize(value) : value);
     }
 
     private datasetAsTable(dataset: VdpDataSet | null): string {

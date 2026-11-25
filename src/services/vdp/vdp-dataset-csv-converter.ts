@@ -1,6 +1,6 @@
 import { injectable } from "tsyringe";
 import { VariableInfo, VdpDataModel } from "@aurigma/axios-design-atoms-api-client";
-import { parseCsvToObjects } from "../../utils/csv";
+import { parseCsvToObjects, stringifyCsv } from "../../utils/csv";
 import { VdpDataSet, VdpDatasetRow, VdpSurfaceData } from "../../types/vdp-dataset";
 
 type CsvRow = Record<string, string>;
@@ -41,7 +41,7 @@ export class VdpDatasetCsvConverter {
     }
 
     public vdpDataSetToCsv(vdpDataSet: VdpDataSet | null | undefined): string {
-        return this.composeCsv(this.vdpDataSetToFlatRows(vdpDataSet));
+        return stringifyCsv(this.vdpDataSetToFlatRows(vdpDataSet));
     }
 
     public vdpDataSetToFlatRows(vdpDataSet: VdpDataSet | null | undefined): CsvRow[] {
@@ -168,30 +168,6 @@ export class VdpDatasetCsvConverter {
             return String((value as { image?: unknown }).image ?? "");
         }
         return typeof value === "string" ? value : JSON.stringify(value ?? null);
-    }
-
-    private composeCsv(rows: CsvRow[]): string {
-        if (rows.length === 0) {
-            return "";
-        }
-        const headers = this.collectHeaders(rows);
-        const bodyRows = rows.map(x => this.toCsvLine(headers.map(h => x[h] ?? "")));
-        return [this.toCsvLine(headers), ...bodyRows].join("\n");
-    }
-
-    private collectHeaders(rows: CsvRow[]): string[] {
-        const headers = new Set<string>();
-        rows.forEach(x => Object.keys(x).forEach(y => headers.add(y)));
-        return Array.from(headers);
-    }
-
-    private toCsvLine(values: string[]): string {
-        return values.map(x => this.escapeCsv(x)).join(",");
-    }
-
-    private escapeCsv(value: string): string {
-        const escaped = value.replace(/"/g, "\"\"");
-        return /[",\n\r]/.test(escaped) ? `"${escaped}"` : escaped;
     }
 
     private isObject(value: unknown): value is Record<string, unknown> {

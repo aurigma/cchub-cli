@@ -103,6 +103,33 @@ npm start -- auth status
 npm start -- auth logout
 ```
 
+### List output formats
+
+All `list` commands accept `--format table|json|yaml|csv`. The default is `table`. JSON and YAML each write a single list to stdout, including `[]` for an empty result. CSV uses field names as column headers and writes a header row even when there are no results. Product associations have separate `workflow.id`, `workflow.name`, `pipeline.id`, and `pipeline.name` columns. Within a CSV cell, array elements and object entries (`key=value`) are separated by commas. Missing or null values produce empty cells. Diagnostics and errors go to stderr.
+
+```sh
+npm start -- products list --tag seasonal --format json
+npm start -- products list --tag seasonal --format yaml
+npm start -- products list --tag seasonal --format csv
+```
+
+`projects search` supports the same formats.
+
+```sh
+npm start --silent -- projects search --storefrontId 42 --format csv
+```
+
+### Product list
+
+```sh
+npm start -- products list
+npm start -- products list --tag apparel --tag seasonal --custom-field public=true --custom-field "collection=Winter 2026"
+```
+
+Lists matching products with their ID, name, Personalization Workflow, Pipeline, Tags, and Custom Fields. Each linked workflow or pipeline is shown as its name and ID when available. Tags and custom field pairs (`key=value`) are comma-separated. Missing values appear as `N/A`.
+
+Repeat `--tag` for each required tag and `--custom-field key=value` for each custom field filter. Both options can be used together. Custom field values are strings, and each key can be specified once. Omitting both filters lists all products.
+
 ### Product details
 
 ```sh

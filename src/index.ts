@@ -15,7 +15,7 @@ import { handleCliError } from "./cli/error-handler";
 import { ProductsCommands } from "./commands/products";
 
 async function main(): Promise<void> {
-    dotenv.config();
+    dotenv.config({ quiet: true });
 
     registerDependencies();
 

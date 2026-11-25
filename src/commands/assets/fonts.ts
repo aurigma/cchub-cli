@@ -1,3 +1,5 @@
+import { listFormatOption, ListFormatOptions } from "../../cli/list-format-option";
+import { ListView } from "../../views/list";
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { Command } from "commander";
@@ -6,7 +8,7 @@ import { existsSync, readFileSync } from "fs";
 import { FontDto } from "@aurigma/axios-asset-storage-api-client";
 import { AssetProcessorApiClientBuilder } from "../../services/api/asset-processor-api-client-builder";
 import { AssetStorageApiClientBuilder } from "../../services/api/asset-storage-api-client-builder";
-import { FontListRow, FontsView } from "../../views/fonts";
+import { FontListRow } from "../../views/fonts";
 import { parseNonEmptyString } from "../../cli/option-parsers";
 import { CliUsageError } from "../../cli/errors";
 
@@ -15,12 +17,11 @@ export class AssetsFontsCommands {
     constructor(
         @inject(AssetProcessorApiClientBuilder) private readonly assetProcessorApi: AssetProcessorApiClientBuilder,
         @inject(AssetStorageApiClientBuilder) private readonly assetStorageApi: AssetStorageApiClientBuilder,
-        @inject(FontsView) private readonly fontsView: FontsView,
+        @inject("fontsListView") private readonly listView: ListView<FontListRow>,
         @inject("Logger") private readonly logger: Logger
     ) {
         this.assetProcessorApi = assetProcessorApi;
         this.assetStorageApi = assetStorageApi;
-        this.fontsView = fontsView;
         this.logger = logger;
     }
 
@@ -40,10 +41,11 @@ export class AssetsFontsCommands {
 
         command
             .command("list")
+            .addOption(listFormatOption())
             .description("Lists fonts from asset storage")
-            .action(async () => {
+            .action(async (options: ListFormatOptions) => {
                 this.logger.debug('Entering "assets fonts list" command.');
-                await this.listFonts();
+                await this.listFonts(options);
             });
 
         return command;
@@ -97,7 +99,7 @@ export class AssetsFontsCommands {
         this.logger.info(`Font imported successfully. id=${dto.id}, postscriptName=${dto.metadata?.postscriptName}`);
     }
 
-    private async listFonts(): Promise<void> {
+    private async listFonts(options: ListFormatOptions): Promise<void> {
         this.logger.debug("Entered AssetsFontsCommands.listFonts.");
 
         const client = await this.assetStorageApi.buildFontsApiClient();
@@ -119,7 +121,7 @@ export class AssetsFontsCommands {
         const items = result.items ?? [];
         this.logger.debug(`Fonts query completed. total=${result.total ?? 0}, items=${items.length}.`);
         const rows = items.map(x => this.mapFontToRow(x));
-        console.log(this.fontsView.listAsTable(rows));
+        this.listView.print(rows, options.format);
         this.logger.info(`Found ${result.total ?? items.length} fonts for tenant ${tenantId}.`);
     }
 

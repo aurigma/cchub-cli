@@ -1,13 +1,15 @@
+import { listFormatOption, ListFormatOptions } from "../../cli/list-format-option";
+import { ListView } from "../../views/list";
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { Command, Option } from "commander";
 import { DataSchemaDto } from "@aurigma/axios-asset-storage-api-client";
 import { AssetStorageApiClientBuilder } from "../../services/api/asset-storage-api-client-builder";
-import { DataSchemaListRow, DataSchemasView } from "../../views/data-schemas";
+import { DataSchemaListRow } from "../../views/data-schemas";
 import { AssetSortField, ASSET_SORT_FIELDS } from "../assets";
 import { parseNonNegativeInteger, parsePositiveInteger } from "../../cli/option-parsers";
 
-interface DataSchemaListOptions {
+interface DataSchemaListOptions extends ListFormatOptions {
     skip: number;
     take: number;
     path: string;
@@ -19,11 +21,10 @@ interface DataSchemaListOptions {
 export class AssetsDataSchemasCommands {
     constructor(
         @inject(AssetStorageApiClientBuilder) private readonly assetStorageApi: AssetStorageApiClientBuilder,
-        @inject(DataSchemasView) private readonly dataSchemasView: DataSchemasView,
+        @inject("dataSchemasListView") private readonly listView: ListView<DataSchemaListRow>,
         @inject("Logger") private readonly logger: Logger
     ) {
         this.assetStorageApi = assetStorageApi;
-        this.dataSchemasView = dataSchemasView;
         this.logger = logger;
     }
 
@@ -34,6 +35,7 @@ export class AssetsDataSchemasCommands {
 
         command
             .command("list")
+            .addOption(listFormatOption())
             .description("Lists data schemas from asset storage")
             .option("-s, --skip <number>", "How many items to skip", parseNonNegativeInteger, 0)
             .option("-t, --take <number>", "How many items to take", parsePositiveInteger, 25)
@@ -70,7 +72,8 @@ export class AssetsDataSchemasCommands {
         );
 
         const items = result.items ?? [];
-        console.log(this.dataSchemasView.listAsTable(items.map(x => this.mapDataSchemaToRow(x))));
+        const rows = items.map(item => this.mapDataSchemaToRow(item));
+        this.listView.print(rows, options.format);
         this.logger.info(`Found ${result.total ?? items.length} data schemas for tenant ${tenantId}. skip=${skip}, take=${take}, path=${path}, sort=${sorting}.`);
     }
 

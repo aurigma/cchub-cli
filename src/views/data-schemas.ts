@@ -1,6 +1,7 @@
-import { inject, injectable } from "tsyringe";
-import { Logger } from "winston";
-import { dtoAsTable } from "../utils/dto-as-table";
+import { ListPresentation, TableListView } from "./list";
+import { CsvColumn } from "../utils/csv";
+import { injectable } from "tsyringe";
+import { TableColumn } from "../utils/dto-as-table";
 import { formatByteSize } from "../utils/format-file-size";
 
 export interface DataSchemaListRow {
@@ -12,28 +13,12 @@ export interface DataSchemaListRow {
 }
 
 @injectable()
-export class DataSchemasView {
-    constructor(
-        @inject("Logger") private readonly logger: Logger
-    ) {
-        this.logger = logger;
-    }
-
-    listAsTable(items: DataSchemaListRow[]): string {
-        this.logger.debug(`Entered DataSchemasView.listAsTable. items=${items?.length ?? 0}.`);
-        return dtoAsTable(
-            items,
-            ["id", "name", "size", "lastModifiedDate"],
-            "data schemas",
-            (name: string, value: unknown) => {
-                if (name === "size") {
-                    return formatByteSize(Number(value));
-                }
-                if (name === "lastModifiedDate") {
-                    return new Date(String(value)).toLocaleString();
-                }
-                return value;
-            }
-        );
-    }
+export class DataSchemasView extends TableListView<DataSchemaListRow> implements ListPresentation<DataSchemaListRow> {
+    public readonly entityNamePlural = "data schemas";
+    public readonly tableColumns: readonly TableColumn<DataSchemaListRow>[] = [
+        "id", "name",
+        { header: "size", value: row => row.size == null ? null : formatByteSize(row.size) },
+        { header: "lastModifiedDate", value: row => row.lastModifiedDate == null ? null : new Date(row.lastModifiedDate).toLocaleString() }
+    ];
+    public readonly csvColumns: readonly CsvColumn<DataSchemaListRow>[] = ["id", "name", "path", "size", "lastModifiedDate"];
 }

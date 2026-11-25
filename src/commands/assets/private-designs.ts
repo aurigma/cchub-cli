@@ -1,3 +1,5 @@
+import { listFormatOption, ListFormatOptions } from "../../cli/list-format-option";
+import { ListView } from "../../views/list";
 import { inject, injectable } from "tsyringe";
 import { Logger } from "winston";
 import { Command, Option } from "commander";
@@ -12,7 +14,7 @@ import { VdpDatasetCsvConverter } from "../../services/vdp/vdp-dataset-csv-conve
 import { DatasetOutputFormat, VdpDataSet } from "../../types/vdp-dataset";
 import { parseNonEmptyString, parseNonNegativeInteger, parsePositiveInteger } from "../../cli/option-parsers";
 
-interface PrivateDesignListOptions {
+interface PrivateDesignListOptions extends ListFormatOptions {
     skip: number;
     take: number;
     search?: string;
@@ -52,6 +54,7 @@ export class AssetsPrivateDesignsCommands {
         @inject(DesignAtomsApiClientBuilder) private readonly designAtomsApi: DesignAtomsApiClientBuilder,
         @inject(VdpDatasetCsvConverter) private readonly vdpDatasetCsvConverter: VdpDatasetCsvConverter,
         @inject(PrivateDesignsView) private readonly privateDesignsView: PrivateDesignsView,
+        @inject("privateDesignsListView") private readonly listView: ListView<PrivateDesignListRow>,
         @inject("Logger") private readonly logger: Logger
     ) {
     }
@@ -63,6 +66,7 @@ export class AssetsPrivateDesignsCommands {
 
         command
             .command("list")
+            .addOption(listFormatOption())
             .description("Lists private design assets from asset storage")
             .option("-s, --skip <number>", "How many items to skip", parseNonNegativeInteger, 0)
             .option("-t, --take <number>", "How many items to take", parsePositiveInteger, 25)
@@ -232,8 +236,10 @@ export class AssetsPrivateDesignsCommands {
         const total = result.total ?? items.length;
         const rows = items.map(x => this.mapPrivateDesignToRow(x));
 
-        console.log(this.privateDesignsView.listAsTable(rows));
-        console.log(`returned ${skip}-${skip + items.length} of ${total}`);
+        this.listView.print(rows, options.format);
+        if (options.format === "table") {
+            console.log(`returned ${skip}-${skip + items.length} of ${total}`);
+        }
 
         this.logger.info(`Listed private designs. total=${total}, returned=${items.length}, skip=${skip}, take=${take}, ownerId=${ownerId}.`);
     }

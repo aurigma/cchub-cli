@@ -1,6 +1,8 @@
 import { inject, injectable } from 'tsyringe';
 import { Logger } from "winston";
-import { ProjectView } from '../views/project';
+import { ProjectListRow, ProjectView } from '../views/project';
+import { ListView } from '../views/list';
+import { listFormatOption, ListFormatOptions } from '../cli/list-format-option';
 import { Command, Option } from 'commander';
 import {
     DatePeriod,
@@ -17,7 +19,7 @@ import { VdpDataModel } from "@aurigma/axios-design-atoms-api-client";
 import { DesignAtomsApiClientBuilder } from '../services/api/design-atoms-api-client-builder';
 import { parseCommaSeparatedList, parseNonEmptyString, parsePositiveInteger } from '../cli/option-parsers';
 
-interface ProjectSearchOptions {
+interface ProjectSearchOptions extends ListFormatOptions {
     storefrontId: number;
     period: DatePeriod;
 }
@@ -48,6 +50,7 @@ export class ProjectCommands {
         @inject(AssetStorageApiClientBuilder) private readonly assetStorageApi: AssetStorageApiClientBuilder,
         @inject(ProjectsCreateCommands) private readonly createCommands: ProjectsCreateCommands,
         @inject(ProjectView) private readonly view: ProjectView,
+        @inject("projectsListView") private readonly projectsListView: ListView<ProjectListRow>,
         @inject("Logger") private readonly logger: Logger
     ) {
         this.storefrontApi = storefrontApi;
@@ -76,6 +79,7 @@ export class ProjectCommands {
         command
             .command("search")
             .description('Searches projects by order number, name, etc. (same as in BackOffice).')
+            .addOption(listFormatOption())
             .requiredOption("-s, --storefrontId <number>", "A storefront ID.", parsePositiveInteger)
             .addOption(
                 new Option("-p, --period <value>", "A period used to filter projects")
@@ -83,9 +87,8 @@ export class ProjectCommands {
                     .default(DatePeriod.Last30Days)
             )
             .argument("[searchString]", "A search string used to filter out projects.", "")
-            .action(async (searchString?: string, options?: ProjectSearchOptions) => {
+            .action(async (searchString: string, options: ProjectSearchOptions) => {
                 this.logger.debug(`Entering "projects search" command. options=${JSON.stringify(options)}. Argument: ${searchString}`);
-                if (options == null) throw new Error("StorefrontId and Period are not optional!");
                 await this.listBySearchString(options, searchString);
             });
 
@@ -274,7 +277,10 @@ export class ProjectCommands {
         const tenantId = this.storefrontApi.getCurrentTenantId();
         this.logger.info(`Found ${projects.total} projects for tenant ${tenantId} at storefront ${options.storefrontId} for period ${options.period} matching the search string "${searchString}". `);
 
-        console.log(this.view.listAsTable(projects.items ?? []));
+        const rows = (projects.items ?? []).map(({ id, name, storefrontId, orderNumber, created }) =>
+            ({ id, name, storefrontId, orderNumber, created })
+        );
+        this.projectsListView.print(rows, options.format);
     }
 
 }
